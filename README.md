@@ -13,12 +13,12 @@ flutter build web
 
 ## Основные адреса
 
-- `/requests` — список заявок;
+- `/requests` - список заявок;
 - `/requests?search=планёрка&type=lateForWork&status=inProgress&dateFrom=2026-01-01&dateTo=2026-06-30&sort=eventDate,desc&page=2&size=10` — фильтры, сортировка и страница в URL;
-- `/requests/1` — карточка заявки;
-- `/clients` — список клиентов;
+- `/requests/1` - карточка заявки;
+- `/clients` - список клиентов;
 - `/clients?city=Москва&search=Иван&sort=name,asc&page=1&size=10` — фильтруемый список клиентов;
-- `/clients/1` — карточка клиента.
+- `/clients/1` - карточка клиента.
 
 ## Слои приложения
 
