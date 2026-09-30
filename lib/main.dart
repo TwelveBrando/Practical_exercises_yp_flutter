@@ -1,29 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
-import 'repositories/client_repository.dart';
-import 'repositories/in_memory_client_repository.dart';
-import 'repositories/in_memory_request_repository.dart';
-import 'repositories/request_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'repositories/agency_repository.dart';
 import 'router.dart';
-import 'state/catalog_notifiers.dart';
+import 'state/agency_state.dart';
+import 'state/form_navigation_guard.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
+  final preferences = await SharedPreferences.getInstance();
+  final repository = AgencyRepository(preferences);
+  await repository.initialize();
   runApp(
     MultiProvider(
       providers: [
-        Provider<ClientRepository>(create: (_) => InMemoryClientRepository()),
-        Provider<RequestRepository>(create: (_) => InMemoryRequestRepository()),
-        ChangeNotifierProvider(
-          create: (context) =>
-              ClientListNotifier(context.read<ClientRepository>()),
-        ),
-        ChangeNotifierProvider(
-          create: (context) =>
-              RequestListNotifier(context.read<RequestRepository>()),
-        ),
+        ChangeNotifierProvider(create: (_) => AgencyState(repository)),
+        Provider(create: (_) => FormNavigationGuard()),
       ],
       child: const AlibiApp(),
     ),

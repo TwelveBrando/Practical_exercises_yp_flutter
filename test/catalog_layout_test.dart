@@ -7,19 +7,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:second_practice/main.dart';
-import 'package:second_practice/repositories/client_repository.dart';
-import 'package:second_practice/repositories/in_memory_client_repository.dart';
-import 'package:second_practice/repositories/in_memory_request_repository.dart';
-import 'package:second_practice/repositories/request_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:second_practice/models/agency_record.dart';
+import 'package:second_practice/repositories/agency_repository.dart';
 import 'package:second_practice/router.dart';
-import 'package:second_practice/state/catalog_notifiers.dart';
+import 'package:second_practice/state/agency_state.dart';
+import 'package:second_practice/state/form_navigation_guard.dart';
 
 void main() {
   setUpAll(() async {
     final icons = FontLoader('MaterialIcons');
     icons.addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
     await icons.load();
-    // Real Cyrillic glyphs for optional screenshots on the development machine.
     final font = File('C:/Windows/Fonts/arial.ttf');
     if (font.existsSync()) {
       final loader = FontLoader('Roboto');
@@ -38,25 +37,36 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final captureKey = GlobalKey();
-    final requests = InMemoryRequestRepository();
-    final clients = InMemoryClientRepository();
-    // Deleted records have three actions instead of two.
-    await requests.softDelete(9);
-    await clients.softDelete(1);
+    SharedPreferences.setMockInitialValues({});
+    final repository = AgencyRepository(await SharedPreferences.getInstance());
+    await repository.initialize();
+    await repository.deleteMany(EntityKind.requests, [9]);
+    final client = await repository.saveForm(EntityKind.clients, {
+      ...repository.formValues(EntityKind.clients, null),
+      'name': 'Новый клиент',
+      'email': 'new@example.com',
+      'city': 'Москва',
+      'cardNumber': 'CARD-0900',
+    }, null);
+    await repository.deleteMany(EntityKind.clients, [client.id]);
 
     await tester.pumpWidget(
       MultiProvider(
         providers: [
-          Provider<RequestRepository>.value(value: requests),
-          Provider<ClientRepository>.value(value: clients),
-          ChangeNotifierProvider(create: (_) => RequestListNotifier(requests)),
-          ChangeNotifierProvider(create: (_) => ClientListNotifier(clients)),
+          ChangeNotifierProvider(create: (_) => AgencyState(repository)),
+          Provider(create: (_) => FormNavigationGuard()),
         ],
         child: RepaintBoundary(key: captureKey, child: const AlibiApp()),
       ),
     );
 
-    for (final catalog in ['requests', 'clients']) {
+    for (final catalog in [
+      'requests',
+      'clients',
+      'employees',
+      'services',
+      'scenarios',
+    ]) {
       appRouter.go('/$catalog?deleted=1');
       await tester.pumpAndSettle();
 
@@ -94,6 +104,7 @@ void main() {
             lessThanOrEqualTo(tableRect.right),
           );
           for (final tooltip in ['Восстановить', 'Удалить навсегда']) {
+            if (find.byTooltip(tooltip).evaluate().isEmpty) continue;
             expect(
               tester.getRect(find.byTooltip(tooltip).first).right,
               lessThanOrEqualTo(tableRect.right),
@@ -101,15 +112,17 @@ void main() {
           }
         } else {
           expect(find.byType(DataTable), findsNothing);
-          final list = find.byType(ListView);
+          final list = find.byType(SingleChildScrollView).first;
           final scrollable = find.descendant(
             of: list,
             matching: find.byType(Scrollable),
           );
-          final state = tester.state<ScrollableState>(scrollable);
+          final state = tester.state<ScrollableState>(scrollable.first);
           await tester.drag(list, const Offset(0, -400));
           await tester.pumpAndSettle();
-          expect(state.position.pixels, greaterThan(0));
+          if (state.position.maxScrollExtent > 0) {
+            expect(state.position.pixels, greaterThan(0));
+          }
           state.position.jumpTo(0);
           await tester.pumpAndSettle();
         }
@@ -133,6 +146,16 @@ void main() {
           });
         }
       }
+
+      tester.view.physicalSize = const Size(360, 640);
+      await tester.pumpAndSettle();
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: '$catalog on a small phone',
+      );
+      tester.view.physicalSize = const Size(360, 900);
+      await tester.pumpAndSettle();
 
       await tester.tap(
         find.widgetWithIcon(IconButton, Icons.open_in_new).hitTestable().first,

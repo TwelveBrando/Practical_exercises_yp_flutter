@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../models/agency_record.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.title, required this.child});
@@ -8,33 +9,29 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 600;
+    final compact = MediaQuery.sizeOf(context).width < 900;
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: Text(title),
+        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: compact
             ? [
-                IconButton(
-                  tooltip: 'Заявки',
-                  onPressed: () => context.go('/requests'),
-                  icon: const Icon(Icons.assignment_outlined),
-                ),
-                IconButton(
-                  tooltip: 'Клиенты',
-                  onPressed: () => context.go('/clients'),
-                  icon: const Icon(Icons.people_outline),
+                PopupMenuButton<EntityKind>(
+                  tooltip: 'Разделы',
+                  icon: const Icon(Icons.menu),
+                  onSelected: (kind) => context.go(kind.path),
+                  itemBuilder: (context) => [
+                    for (final kind in EntityKind.values)
+                      PopupMenuItem(value: kind, child: Text(kind.label)),
+                  ],
                 ),
               ]
             : [
-                TextButton(
-                  onPressed: () => context.go('/requests'),
-                  child: const Text('Заявки'),
-                ),
-                TextButton(
-                  onPressed: () => context.go('/clients'),
-                  child: const Text('Клиенты'),
-                ),
+                for (final kind in EntityKind.values)
+                  TextButton(
+                    onPressed: () => context.go(kind.path),
+                    child: Text(kind.label),
+                  ),
               ],
       ),
       body: SafeArea(

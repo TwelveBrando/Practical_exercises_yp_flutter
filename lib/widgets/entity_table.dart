@@ -28,6 +28,7 @@ class EntityTable<T> extends StatelessWidget {
     this.onSort,
     this.actions,
     this.titleOf,
+    this.scrollable = true,
   });
   final List<TableColumnSpec<T>> columns;
   final List<T> items;
@@ -39,11 +40,15 @@ class EntityTable<T> extends StatelessWidget {
   final ValueChanged<String>? onSort;
   final List<Widget> Function(T)? actions;
   final String Function(T)? titleOf;
+  final bool scrollable;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       if (constraints.maxWidth < 1100) {
         return ListView.builder(
+          shrinkWrap: !scrollable,
+          primary: scrollable,
+          physics: scrollable ? null : const NeverScrollableScrollPhysics(),
           itemCount: items.length,
           itemBuilder: (context, index) {
             final item = items[index];
@@ -180,6 +185,9 @@ class EntityTable<T> extends StatelessWidget {
           );
         }).toList(),
       );
+      if (!scrollable) {
+        return SizedBox(width: constraints.maxWidth, child: table);
+      }
       return Scrollbar(
         child: SingleChildScrollView(
           primary: true,
