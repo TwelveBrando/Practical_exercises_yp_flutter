@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'repositories/agency_repository.dart';
+import 'package:dio/dio.dart';
+import 'core/api_client.dart';
+import 'repositories/api_agency_repository.dart';
+import 'repositories/agency_repository_contract.dart';
 import 'router.dart';
 import 'state/agency_state.dart';
 import 'state/form_navigation_guard.dart';
@@ -10,13 +12,20 @@ import 'state/form_navigation_guard.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
-  final preferences = await SharedPreferences.getInstance();
-  final repository = AgencyRepository(preferences);
-  await repository.initialize();
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AgencyState(repository)),
+        Provider<Dio>(
+          create: (_) => buildDio(),
+          dispose: (_, dio) => dio.close(force: true),
+        ),
+        ProxyProvider<Dio, AgencyRepositoryContract>(
+          update: (_, dio, previous) => previous ?? ApiAgencyRepository(dio),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              AgencyState(context.read<AgencyRepositoryContract>()),
+        ),
         Provider(create: (_) => FormNavigationGuard()),
       ],
       child: const AlibiApp(),

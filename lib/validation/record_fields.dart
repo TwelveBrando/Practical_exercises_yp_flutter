@@ -36,8 +36,9 @@ List<RecordField> recordFields(
   EntityKind kind,
   Map<String, dynamic> values,
   Map<EntityKind, List<AgencyRecord>> catalogs,
-  int? editingId,
-) {
+  int? editingId, {
+  bool checkUnique = true,
+}) {
   final current = catalogs[kind]!
       .where((record) => record.id == editingId)
       .firstOrNull;
@@ -129,6 +130,7 @@ List<RecordField> recordFields(
       );
 
   String? unique(Object? value, String key) {
+    if (!checkUnique) return null;
     final normalized = value?.toString().trim().toLowerCase() ?? '';
     final duplicate = catalogs[kind]!.any(
       (record) =>
@@ -199,6 +201,7 @@ List<RecordField> recordFields(
           validate: (value) {
             final error = Validators.identifier(value, 'CARD');
             if (error != null) return error;
+            if (!checkUnique) return null;
             return catalogs[kind]!.whereType<Client>().any(
                   (client) =>
                       client.id != editingId &&

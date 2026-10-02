@@ -73,10 +73,10 @@ class AlibiRequest implements AgencyRecord {
   };
   factory AlibiRequest.fromJson(Map<String, dynamic> json) => AlibiRequest(
     id: readInt(json['id']),
-    clientId: readInt(json['clientId']),
+    clientId: readInt(json['clientId'] ?? readMap(json['client'])['id']),
     title: readString(json['title']),
     code: readString(json['code']),
-    serviceId: readInt(json['serviceId'], 1),
+    serviceId: readInt(json['serviceId'] ?? readMap(json['service'])['id'], 1),
     type:
         RequestType.values
             .where((value) => value.name == json['type'])
@@ -87,8 +87,22 @@ class AlibiRequest implements AgencyRecord {
             .where((value) => value.name == json['status'])
             .firstOrNull ??
         RequestStatus.newRequest,
-    employeeIds: readIds(json['employeeIds']),
-    scenarioIds: readIds(json['scenarioIds']),
+    employeeIds: readIds(
+      json['employeeIds'] ??
+          (json['employees'] is List
+              ? (json['employees'] as List)
+                    .map((item) => readMap(item)['id'])
+                    .toList()
+              : null),
+    ),
+    scenarioIds: readIds(
+      json['scenarioIds'] ??
+          (json['scenarios'] is List
+              ? (json['scenarios'] as List)
+                    .map((item) => readMap(item)['id'])
+                    .toList()
+              : null),
+    ),
     eventDate: readDate(json['eventDate']),
     createdAt: readDate(json['createdAt']),
     urgency: readInt(json['urgency'], 1),

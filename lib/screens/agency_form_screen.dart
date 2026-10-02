@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/agency_record.dart';
-import '../repositories/agency_repository.dart';
+import '../repositories/repository_exceptions.dart';
 import '../state/agency_state.dart';
 import '../state/form_navigation_guard.dart';
 import '../validation/record_fields.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/record_form.dart';
+import '../widgets/load_status.dart';
+import '../core/api_exceptions.dart';
 
 class AgencyFormScreen extends StatefulWidget {
   const AgencyFormScreen({super.key, required this.kind, this.id});
@@ -25,6 +27,8 @@ class _AgencyFormScreenState extends State<AgencyFormScreen> {
   late String _initial;
   late FormNavigationGuard _guard;
   bool _initialized = false;
+  Future<void>? _loading;
+  bool _started = false;
   bool _dirty = false;
   bool _saving = false;
   bool _allowLeave = false;
@@ -35,6 +39,21 @@ class _AgencyFormScreenState extends State<AgencyFormScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    _guard = context.read<FormNavigationGuard>();
+    _guard.attach(this, _confirmLeave);
+    _loading = _load();
+  }
+
+  Future<void> _load() async {
+    final repository = context.read<AgencyState>().repository;
+    await repository.prepareForm(widget.kind, widget.id);
+    if (!mounted) return;
+    _initializeForm();
+  }
+
+  void _initializeForm() {
     if (_initialized) return;
     _initialized = true;
     final repository = context.read<AgencyState>().repository;
@@ -44,6 +63,7 @@ class _AgencyFormScreenState extends State<AgencyFormScreen> {
       _values,
       repository.catalogs,
       widget.id,
+      checkUnique: !repository.validatesOnServer,
     );
     for (final field in fields) {
       if (field.input == FieldInput.select) {
@@ -58,8 +78,6 @@ class _AgencyFormScreenState extends State<AgencyFormScreen> {
       }
     }
     _initial = jsonEncode(_values);
-    _guard = context.read<FormNavigationGuard>();
-    _guard.attach(this, _confirmLeave);
   }
 
   void _changed(String key, Object? value) {
@@ -128,6 +146,19 @@ class _AgencyFormScreenState extends State<AgencyFormScreen> {
         _saving = false;
       });
       context.go('${widget.kind.path}/${record.id}');
+    } on ValidationException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errors = error.errors;
+        _saving = false;
+      });
+      _formKey.currentState!.validate();
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _saveError = error.message;
+        _saving = false;
+      });
     } on FieldValidationException catch (error) {
       if (!mounted) return;
       setState(() {
@@ -138,8 +169,7 @@ class _AgencyFormScreenState extends State<AgencyFormScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _saveError =
-            'Не удалось сохранить запись. Проверьте доступ браузера к хранилищу и повторите попытку.';
+        _saveError = 'Не удалось сохранить запись. Повторите попытку.';
         _saving = false;
       });
     }
@@ -155,7 +185,29 @@ class _AgencyFormScreenState extends State<AgencyFormScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => FutureBuilder<void>(
+    future: _loading,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState != ConnectionState.done) {
+        return AppShell(
+          title: 'Загрузка формы',
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      }
+      if (snapshot.hasError) {
+        return AppShell(
+          title: 'Загрузка формы',
+          child: LoadError(
+            error: snapshot.error,
+            onRetry: () => setState(() => _loading = _load()),
+          ),
+        );
+      }
+      return _buildForm(context);
+    },
+  );
+
+  Widget _buildForm(BuildContext context) {
     final repository = context.watch<AgencyState>().repository;
     if (widget.id != null && repository.byId(widget.kind, widget.id!) == null) {
       return AppShell(

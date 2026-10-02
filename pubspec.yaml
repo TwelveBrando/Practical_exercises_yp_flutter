@@ -1,5 +1,5 @@
 name: second_practice
-description: Практическая работа 3 — формы и связанные сущности агентства алиби
+description: Практическая работа 4 — REST API агентства алиби
 publish_to: 'none'
 version: 0.1.0+1
 environment:
@@ -10,6 +10,7 @@ dependencies:
   flutter_web_plugins:
     sdk: flutter
   go_router: ^17.5.0
+  dio: ^5.11.1
   provider: ^6.1.5
   shared_preferences: ^2.5.5
 dev_dependencies:

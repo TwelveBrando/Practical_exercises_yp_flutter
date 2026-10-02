@@ -39,7 +39,7 @@ class Scenario implements AgencyRecord {
     id: readInt(json['id']),
     name: readString(json['name']),
     description: readString(json['description']),
-    serviceId: readInt(json['serviceId']),
+    serviceId: readInt(json['serviceId'] ?? readMap(json['service'])['id']),
     durationMinutes: readInt(json['durationMinutes'], 30),
     createdAt: readDate(json['createdAt']),
     deletedAt: readOptionalDate(json['deletedAt']),

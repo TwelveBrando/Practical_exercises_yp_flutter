@@ -1,0 +1,755 @@
+{
+  "schemaVersion": 2,
+  "records": {
+    "requests": [
+      {
+        "id": 1,
+        "clientId": 1,
+        "title": "Задержался на планёрку",
+        "code": "ALI-0001",
+        "type": "lateForWork",
+        "status": "newRequest",
+        "serviceId": 1,
+        "employeeIds": [
+          1
+        ],
+        "scenarioIds": [
+          1
+        ],
+        "eventDate": "2026-01-01T00:00:00.000",
+        "createdAt": "2026-01-01T00:00:00.000",
+        "urgency": 1,
+        "deletedAt": null
+      },
+      {
+        "id": 2,
+        "clientId": 2,
+        "title": "Перенос встречи с подрядчиком",
+        "code": "ALI-0002",
+        "type": "missedMeeting",
+        "status": "inProgress",
+        "serviceId": 2,
+        "employeeIds": [
+          2
+        ],
+        "scenarioIds": [
+          2
+        ],
+        "eventDate": "2026-02-04T00:00:00.000",
+        "createdAt": "2026-01-05T00:00:00.000",
+        "urgency": 2,
+        "deletedAt": null
+      },
+      {
+        "id": 3,
+        "clientId": 3,
+        "title": "Забыл про семейный ужин",
+        "code": "ALI-0003",
+        "type": "missedDeadline",
+        "status": "ready",
+        "serviceId": 3,
+        "employeeIds": [
+          3
+        ],
+        "scenarioIds": [
+          3
+        ],
+        "eventDate": "2026-03-07T00:00:00.000",
+        "createdAt": "2026-01-09T00:00:00.000",
+        "urgency": 3,
+        "deletedAt": null
+      },
+      {
+        "id": 4,
+        "clientId": 4,
+        "title": "Сорванный срок презентации",
+        "code": "ALI-0004",
+        "type": "awkwardEvent",
+        "status": "closed",
+        "serviceId": 1,
+        "employeeIds": [
+          4
+        ],
+        "scenarioIds": [
+          1
+        ],
+        "eventDate": "2026-04-10T00:00:00.000",
+        "createdAt": "2026-01-13T00:00:00.000",
+        "urgency": 1,
+        "deletedAt": null
+      },
+      {
+        "id": 5,
+        "clientId": 5,
+        "title": "Опоздание на рабочую встречу",
+        "code": "ALI-0005",
+        "type": "lateForWork",
+        "status": "newRequest",
+        "serviceId": 2,
+        "employeeIds": [
+          1
+        ],
+        "scenarioIds": [
+          2
+        ],
+        "eventDate": "2026-05-13T00:00:00.000",
+        "createdAt": "2026-01-17T00:00:00.000",
+        "urgency": 2,
+        "deletedAt": null
+      },
+      {
+        "id": 6,
+        "clientId": 6,
+        "title": "Неудачно назначенный звонок",
+        "code": "ALI-0006",
+        "type": "missedMeeting",
+        "status": "inProgress",
+        "serviceId": 3,
+        "employeeIds": [
+          2
+        ],
+        "scenarioIds": [
+          3
+        ],
+        "eventDate": "2026-06-16T00:00:00.000",
+        "createdAt": "2026-01-21T00:00:00.000",
+        "urgency": 3,
+        "deletedAt": null
+      },
+      {
+        "id": 7,
+        "clientId": 7,
+        "title": "Пропуск утреннего совещания",
+        "code": "ALI-0007",
+        "type": "missedDeadline",
+        "status": "ready",
+        "serviceId": 1,
+        "employeeIds": [
+          3
+        ],
+        "scenarioIds": [
+          1
+        ],
+        "eventDate": "2026-07-19T00:00:00.000",
+        "createdAt": "2026-01-25T00:00:00.000",
+        "urgency": 1,
+        "deletedAt": null
+      },
+      {
+        "id": 8,
+        "clientId": 8,
+        "title": "Перенос встречи выпускников",
+        "code": "ALI-0008",
+        "type": "awkwardEvent",
+        "status": "closed",
+        "serviceId": 2,
+        "employeeIds": [
+          4
+        ],
+        "scenarioIds": [
+          2
+        ],
+        "eventDate": "2026-08-22T00:00:00.000",
+        "createdAt": "2026-01-29T00:00:00.000",
+        "urgency": 2,
+        "deletedAt": null
+      },
+      {
+        "id": 9,
+        "clientId": 9,
+        "title": "Забытый юбилей коллеги",
+        "code": "ALI-0009",
+        "type": "lateForWork",
+        "status": "newRequest",
+        "serviceId": 3,
+        "employeeIds": [
+          1
+        ],
+        "scenarioIds": [
+          3
+        ],
+        "eventDate": "2026-09-25T00:00:00.000",
+        "createdAt": "2026-02-02T00:00:00.000",
+        "urgency": 3,
+        "deletedAt": null
+      },
+      {
+        "id": 10,
+        "clientId": 10,
+        "title": "Опоздание на собеседование",
+        "code": "ALI-0010",
+        "type": "missedMeeting",
+        "status": "inProgress",
+        "serviceId": 1,
+        "employeeIds": [
+          2
+        ],
+        "scenarioIds": [
+          1
+        ],
+        "eventDate": "2026-01-01T00:00:00.000",
+        "createdAt": "2026-02-06T00:00:00.000",
+        "urgency": 1,
+        "deletedAt": null
+      },
+      {
+        "id": 11,
+        "clientId": 11,
+        "title": "Срыв срока отчёта",
+        "code": "ALI-0011",
+        "type": "missedDeadline",
+        "status": "ready",
+        "serviceId": 2,
+        "employeeIds": [
+          3
+        ],
+        "scenarioIds": [
+          2
+        ],
+        "eventDate": "2026-02-04T00:00:00.000",
+        "createdAt": "2026-02-10T00:00:00.000",
+        "urgency": 2,
+        "deletedAt": null
+      },
+      {
+        "id": 12,
+        "clientId": 12,
+        "title": "Отмена поездки за город",
+        "code": "ALI-0012",
+        "type": "awkwardEvent",
+        "status": "closed",
+        "serviceId": 3,
+        "employeeIds": [
+          4
+        ],
+        "scenarioIds": [
+          3
+        ],
+        "eventDate": "2026-03-07T00:00:00.000",
+        "createdAt": "2026-02-14T00:00:00.000",
+        "urgency": 3,
+        "deletedAt": null
+      },
+      {
+        "id": 13,
+        "clientId": 1,
+        "title": "Перепутал время встречи",
+        "code": "ALI-0013",
+        "type": "lateForWork",
+        "status": "newRequest",
+        "serviceId": 1,
+        "employeeIds": [
+          1
+        ],
+        "scenarioIds": [
+          1
+        ],
+        "eventDate": "2026-04-10T00:00:00.000",
+        "createdAt": "2026-02-18T00:00:00.000",
+        "urgency": 1,
+        "deletedAt": null
+      },
+      {
+        "id": 14,
+        "clientId": 2,
+        "title": "Опоздал на тренировку",
+        "code": "ALI-0014",
+        "type": "missedMeeting",
+        "status": "inProgress",
+        "serviceId": 2,
+        "employeeIds": [
+          2
+        ],
+        "scenarioIds": [
+          2
+        ],
+        "eventDate": "2026-05-13T00:00:00.000",
+        "createdAt": "2026-02-22T00:00:00.000",
+        "urgency": 2,
+        "deletedAt": null
+      },
+      {
+        "id": 15,
+        "clientId": 3,
+        "title": "Не пришёл на обед",
+        "code": "ALI-0015",
+        "type": "missedDeadline",
+        "status": "ready",
+        "serviceId": 3,
+        "employeeIds": [
+          3
+        ],
+        "scenarioIds": [
+          3
+        ],
+        "eventDate": "2026-06-16T00:00:00.000",
+        "createdAt": "2026-02-26T00:00:00.000",
+        "urgency": 3,
+        "deletedAt": null
+      },
+      {
+        "id": 16,
+        "clientId": 4,
+        "title": "Перенос онлайн-звонка",
+        "code": "ALI-0016",
+        "type": "awkwardEvent",
+        "status": "closed",
+        "serviceId": 1,
+        "employeeIds": [
+          4
+        ],
+        "scenarioIds": [
+          1
+        ],
+        "eventDate": "2026-07-19T00:00:00.000",
+        "createdAt": "2026-03-02T00:00:00.000",
+        "urgency": 1,
+        "deletedAt": null
+      },
+      {
+        "id": 17,
+        "clientId": 5,
+        "title": "Забыл подтвердить бронь",
+        "code": "ALI-0017",
+        "type": "lateForWork",
+        "status": "newRequest",
+        "serviceId": 2,
+        "employeeIds": [
+          1
+        ],
+        "scenarioIds": [
+          2
+        ],
+        "eventDate": "2026-08-22T00:00:00.000",
+        "createdAt": "2026-03-06T00:00:00.000",
+        "urgency": 2,
+        "deletedAt": null
+      },
+      {
+        "id": 18,
+        "clientId": 6,
+        "title": "Опоздание на лекцию",
+        "code": "ALI-0018",
+        "type": "missedMeeting",
+        "status": "inProgress",
+        "serviceId": 3,
+        "employeeIds": [
+          2
+        ],
+        "scenarioIds": [
+          3
+        ],
+        "eventDate": "2026-09-25T00:00:00.000",
+        "createdAt": "2026-03-10T00:00:00.000",
+        "urgency": 3,
+        "deletedAt": null
+      },
+      {
+        "id": 19,
+        "clientId": 7,
+        "title": "Перенос встречи с клиентом",
+        "code": "ALI-0019",
+        "type": "missedDeadline",
+        "status": "ready",
+        "serviceId": 1,
+        "employeeIds": [
+          3
+        ],
+        "scenarioIds": [
+          1
+        ],
+        "eventDate": "2026-01-01T00:00:00.000",
+        "createdAt": "2026-03-14T00:00:00.000",
+        "urgency": 1,
+        "deletedAt": null
+      },
+      {
+        "id": 20,
+        "clientId": 8,
+        "title": "Не успел подготовить доклад",
+        "code": "ALI-0020",
+        "type": "awkwardEvent",
+        "status": "closed",
+        "serviceId": 2,
+        "employeeIds": [
+          4
+        ],
+        "scenarioIds": [
+          2
+        ],
+        "eventDate": "2026-02-04T00:00:00.000",
+        "createdAt": "2026-03-18T00:00:00.000",
+        "urgency": 2,
+        "deletedAt": null
+      },
+      {
+        "id": 21,
+        "clientId": 9,
+        "title": "Пропустил семейный праздник",
+        "code": "ALI-0021",
+        "type": "lateForWork",
+        "status": "newRequest",
+        "serviceId": 3,
+        "employeeIds": [
+          1
+        ],
+        "scenarioIds": [
+          3
+        ],
+        "eventDate": "2026-03-07T00:00:00.000",
+        "createdAt": "2026-03-22T00:00:00.000",
+        "urgency": 3,
+        "deletedAt": null
+      },
+      {
+        "id": 22,
+        "clientId": 10,
+        "title": "Задержался в дороге",
+        "code": "ALI-0022",
+        "type": "missedMeeting",
+        "status": "inProgress",
+        "serviceId": 1,
+        "employeeIds": [
+          2
+        ],
+        "scenarioIds": [
+          1
+        ],
+        "eventDate": "2026-04-10T00:00:00.000",
+        "createdAt": "2026-03-26T00:00:00.000",
+        "urgency": 1,
+        "deletedAt": null
+      },
+      {
+        "id": 23,
+        "clientId": 11,
+        "title": "Перепутал дату визита",
+        "code": "ALI-0023",
+        "type": "missedDeadline",
+        "status": "ready",
+        "serviceId": 2,
+        "employeeIds": [
+          3
+        ],
+        "scenarioIds": [
+          2
+        ],
+        "eventDate": "2026-05-13T00:00:00.000",
+        "createdAt": "2026-03-30T00:00:00.000",
+        "urgency": 2,
+        "deletedAt": null
+      },
+      {
+        "id": 24,
+        "clientId": 12,
+        "title": "Опоздание на презентацию",
+        "code": "ALI-0024",
+        "type": "awkwardEvent",
+        "status": "closed",
+        "serviceId": 3,
+        "employeeIds": [
+          4
+        ],
+        "scenarioIds": [
+          3
+        ],
+        "eventDate": "2026-06-16T00:00:00.000",
+        "createdAt": "2026-04-03T00:00:00.000",
+        "urgency": 3,
+        "deletedAt": null
+      }
+    ],
+    "clients": [
+      {
+        "id": 1,
+        "name": "Иван Петров",
+        "email": "i.petrov@example.com",
+        "city": "Москва",
+        "joinedAt": "2025-02-03T00:00:00.000",
+        "card": {
+          "number": "CARD-0001",
+          "issuedAt": "2025-02-03T00:00:00.000",
+          "points": 10
+        },
+        "deletedAt": null
+      },
+      {
+        "id": 2,
+        "name": "Мария Смирнова",
+        "email": "m.smirnova@example.com",
+        "city": "Санкт-Петербург",
+        "joinedAt": "2025-03-14T00:00:00.000",
+        "card": {
+          "number": "CARD-0002",
+          "issuedAt": "2025-03-14T00:00:00.000",
+          "points": 20
+        },
+        "deletedAt": null
+      },
+      {
+        "id": 3,
+        "name": "Алексей Кузнецов",
+        "email": "a.kuznetsov@example.com",
+        "city": "Казань",
+        "joinedAt": "2025-04-22T00:00:00.000",
+        "card": {
+          "number": "CARD-0003",
+          "issuedAt": "2025-04-22T00:00:00.000",
+          "points": 30
+        },
+        "deletedAt": null
+      },
+      {
+        "id": 4,
+        "name": "Елена Попова",
+        "email": "e.popova@example.com",
+        "city": "Москва",
+        "joinedAt": "2025-05-09T00:00:00.000",
+        "card": {
+          "number": "CARD-0004",
+          "issuedAt": "2025-05-09T00:00:00.000",
+          "points": 40
+        },
+        "deletedAt": null
+      },
+      {
+        "id": 5,
+        "name": "Дмитрий Соколов",
+        "email": "d.sokolov@example.com",
+        "city": "Екатеринбург",
+        "joinedAt": "2025-06-17T00:00:00.000",
+        "card": {
+          "number": "CARD-0005",
+          "issuedAt": "2025-06-17T00:00:00.000",
+          "points": 50
+        },
+        "deletedAt": null
+      },
+      {
+        "id": 6,
+        "name": "Ольга Лебедева",
+        "email": "o.lebedeva@example.com",
+        "city": "Новосибирск",
+        "joinedAt": "2025-07-01T00:00:00.000",
+        "card": {
+          "number": "CARD-0006",
+          "issuedAt": "2025-07-01T00:00:00.000",
+          "points": 60
+        },
+        "deletedAt": null
+      },
+      {
+        "id": 7,
+        "name": "Сергей Волков",
+        "email": "s.volkov@example.com",
+        "city": "Казань",
+        "joinedAt": "2025-08-12T00:00:00.000",
+        "card": {
+          "number": "CARD-0007",
+          "issuedAt": "2025-08-12T00:00:00.000",
+          "points": 70
+        },
+        "deletedAt": null
+      },
+      {
+        "id": 8,
+        "name": "Анна Морозова",
+        "email": "a.morozova@example.com",
+        "city": "Москва",
+        "joinedAt": "2025-09-05T00:00:00.000",
+        "card": {
+          "number": "CARD-0008",
+          "issuedAt": "2025-09-05T00:00:00.000",
+          "points": 80
+        },
+        "deletedAt": null
+      },
+      {
+        "id": 9,
+        "name": "Павел Фёдоров",
+        "email": "p.fedorov@example.com",
+        "city": "Самара",
+        "joinedAt": "2025-10-18T00:00:00.000",
+        "card": {
+          "number": "CARD-0009",
+          "issuedAt": "2025-10-18T00:00:00.000",
+          "points": 90
+        },
+        "deletedAt": null
+      },
+      {
+        "id": 10,
+        "name": "Ирина Павлова",
+        "email": "i.pavlova@example.com",
+        "city": "Санкт-Петербург",
+        "joinedAt": "2025-11-02T00:00:00.000",
+        "card": {
+          "number": "CARD-0010",
+          "issuedAt": "2025-11-02T00:00:00.000",
+          "points": 100
+        },
+        "deletedAt": null
+      },
+      {
+        "id": 11,
+        "name": "Никита Семёнов",
+        "email": "n.semenov@example.com",
+        "city": "Пермь",
+        "joinedAt": "2026-01-11T00:00:00.000",
+        "card": {
+          "number": "CARD-0011",
+          "issuedAt": "2026-01-11T00:00:00.000",
+          "points": 110
+        },
+        "deletedAt": null
+      },
+      {
+        "id": 12,
+        "name": "Дарья Голубева",
+        "email": "d.golubeva@example.com",
+        "city": "Москва",
+        "joinedAt": "2026-02-20T00:00:00.000",
+        "card": {
+          "number": "CARD-0012",
+          "issuedAt": "2026-02-20T00:00:00.000",
+          "points": 120
+        },
+        "deletedAt": null
+      }
+    ],
+    "employees": [
+      {
+        "id": 1,
+        "name": "Алина Орлова",
+        "email": "agent1@alibi.example",
+        "phone": "+7 900 100-00-00",
+        "specialty": "Бытовые ситуации",
+        "hiredAt": "2025-01-10T00:00:00.000",
+        "experienceYears": 1,
+        "deletedAt": null
+      },
+      {
+        "id": 2,
+        "name": "Максим Белов",
+        "email": "agent2@alibi.example",
+        "phone": "+7 900 100-00-01",
+        "specialty": "Деловые встречи",
+        "hiredAt": "2025-02-10T00:00:00.000",
+        "experienceYears": 2,
+        "deletedAt": null
+      },
+      {
+        "id": 3,
+        "name": "Ирина Соколова",
+        "email": "agent3@alibi.example",
+        "phone": "+7 900 100-00-02",
+        "specialty": "Бытовые ситуации",
+        "hiredAt": "2025-03-10T00:00:00.000",
+        "experienceYears": 3,
+        "deletedAt": null
+      },
+      {
+        "id": 4,
+        "name": "Антон Лебедев",
+        "email": "agent4@alibi.example",
+        "phone": "+7 900 100-00-03",
+        "specialty": "Деловые встречи",
+        "hiredAt": "2025-04-10T00:00:00.000",
+        "experienceYears": 4,
+        "deletedAt": null
+      }
+    ],
+    "services": [
+      {
+        "id": 1,
+        "name": "Бытовое объяснение",
+        "description": "Подготовка объяснения для повседневной ситуации.",
+        "category": "Стандартная",
+        "price": 500,
+        "createdAt": "2026-01-01T00:00:00.000",
+        "deletedAt": null
+      },
+      {
+        "id": 2,
+        "name": "Срочная подготовка",
+        "description": "Подготовка подходящего объяснения в короткий срок.",
+        "category": "Срочная",
+        "price": 1500,
+        "createdAt": "2026-01-01T00:00:00.000",
+        "deletedAt": null
+      },
+      {
+        "id": 3,
+        "name": "Подробный сценарий",
+        "description": "Подготовка подробного сценария и консультация.",
+        "category": "Расширенная",
+        "price": 2500,
+        "createdAt": "2026-01-01T00:00:00.000",
+        "deletedAt": null
+      }
+    ],
+    "scenarios": [
+      {
+        "id": 1,
+        "name": "Задержка транспорта",
+        "description": "Объяснение ситуации: задержка транспорта.",
+        "serviceId": 1,
+        "durationMinutes": 15,
+        "createdAt": "2026-01-01T00:00:00.000",
+        "deletedAt": null
+      },
+      {
+        "id": 2,
+        "name": "Неотложное домашнее дело",
+        "description": "Объяснение ситуации: неотложное домашнее дело.",
+        "serviceId": 2,
+        "durationMinutes": 25,
+        "createdAt": "2026-01-01T00:00:00.000",
+        "deletedAt": null
+      },
+      {
+        "id": 3,
+        "name": "Проблема со связью",
+        "description": "Объяснение ситуации: проблема со связью.",
+        "serviceId": 3,
+        "durationMinutes": 35,
+        "createdAt": "2026-01-01T00:00:00.000",
+        "deletedAt": null
+      },
+      {
+        "id": 4,
+        "name": "Изменение времени встречи",
+        "description": "Объяснение ситуации: изменение времени встречи.",
+        "serviceId": 1,
+        "durationMinutes": 45,
+        "createdAt": "2026-01-01T00:00:00.000",
+        "deletedAt": null
+      },
+      {
+        "id": 5,
+        "name": "Непредвиденная очередь",
+        "description": "Объяснение ситуации: непредвиденная очередь.",
+        "serviceId": 2,
+        "durationMinutes": 55,
+        "createdAt": "2026-01-01T00:00:00.000",
+        "deletedAt": null
+      },
+      {
+        "id": 6,
+        "name": "Задержка в дороге",
+        "description": "Объяснение ситуации: задержка в дороге.",
+        "serviceId": 3,
+        "durationMinutes": 65,
+        "createdAt": "2026-01-01T00:00:00.000",
+        "deletedAt": null
+      }
+    ]
+  },
+  "nextIds": {
+    "requests": 25,
+    "clients": 13,
+    "employees": 5,
+    "services": 4,
+    "scenarios": 7
+  }
+}

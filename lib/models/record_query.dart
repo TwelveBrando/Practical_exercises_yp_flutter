@@ -11,6 +11,8 @@ class RecordQuery {
     this.size = 10,
     this.includeDeleted = false,
     this.demoError = false,
+    this.failStatus,
+    this.delayMs = 0,
   });
   final String search;
   final String? category;
@@ -23,6 +25,8 @@ class RecordQuery {
   final int size;
   final bool includeDeleted;
   final bool demoError;
+  final int? failStatus;
+  final int delayMs;
 
   factory RecordQuery.fromUri(Uri uri) {
     final params = uri.queryParameters;
@@ -40,6 +44,8 @@ class RecordQuery {
       size: [10, 25, 50].contains(size) ? size : 10,
       includeDeleted: params['deleted'] == '1',
       demoError: params['demoError'] == '1',
+      failStatus: int.tryParse(params['__fail'] ?? ''),
+      delayMs: (int.tryParse(params['__delay'] ?? '') ?? 0).clamp(0, 10000),
     );
   }
 
@@ -54,5 +60,7 @@ class RecordQuery {
     'size': '$size',
     if (includeDeleted) 'deleted': '1',
     if (demoError) 'demoError': '1',
+    if (failStatus != null) '__fail': '$failStatus',
+    if (delayMs > 0) '__delay': '$delayMs',
   };
 }

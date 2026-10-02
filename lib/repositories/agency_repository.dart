@@ -4,56 +4,41 @@ import '../data/seed_data.dart';
 import '../models/agency_record.dart';
 import '../models/agency_service.dart';
 import '../models/alibi_request.dart';
-import '../models/client.dart';
 import '../models/client_card.dart';
 import '../models/employee.dart';
 import '../models/scenario.dart';
+import 'agency_repository_contract.dart';
+import 'repository_exceptions.dart';
+export 'repository_exceptions.dart';
 import '../models/json_readers.dart';
 import '../models/page_result.dart';
 import '../models/record_query.dart';
 import '../validation/record_fields.dart';
 
-class FieldValidationException implements Exception {
-  const FieldValidationException(this.errors);
-  final Map<String, String> errors;
-}
-
-class RelatedRecordsException implements Exception {
-  const RelatedRecordsException(this.counts);
-  final Map<String, int> counts;
-  @override
-  String toString() =>
-      'Удаление невозможно: связанные записи — ${counts.entries.map((entry) => '${entry.key}: ${entry.value}').join(', ')}. Сначала измените или удалите эти связи. Учитываются также записи в корзине.';
-}
-
-class AgencyRepository {
+class AgencyRepository extends AgencyRepositoryContract {
   AgencyRepository(this.preferences);
   static const storageKey = 'alibi_agency_v2';
   static const oldStorageKey = 'alibi_agency_v1';
   final SharedPreferences preferences;
   Map<EntityKind, List<AgencyRecord>> _records = {};
   Map<EntityKind, int> _nextIds = {};
+  @override
   String? startupNotice;
   bool _writing = false;
 
+  @override
   Map<EntityKind, List<AgencyRecord>> get catalogs => {
     for (final kind in EntityKind.values)
       kind: List.unmodifiable(_records[kind] ?? []),
   };
+  @override
   List<AgencyRecord> all(EntityKind kind) => catalogs[kind]!;
+  @override
   AgencyRecord? byId(EntityKind kind, int id) =>
       all(kind).where((record) => record.id == id).firstOrNull;
+  @override
   String nameOf(EntityKind kind, int id) =>
       byId(kind, id)?.name ?? 'Запись #$id не найдена';
-
-  AgencyRecord decode(EntityKind kind, Map<String, dynamic> json) =>
-      switch (kind) {
-        EntityKind.requests => AlibiRequest.fromJson(json),
-        EntityKind.clients => Client.fromJson(json),
-        EntityKind.employees => Employee.fromJson(json),
-        EntityKind.services => AgencyService.fromJson(json),
-        EntityKind.scenarios => Scenario.fromJson(json),
-      };
 
   Map<EntityKind, List<AgencyRecord>> _seed() {
     final date = DateTime(2026, 1, 1);
@@ -147,6 +132,7 @@ class AgencyRepository {
     };
   }
 
+  @override
   Future<void> initialize() async {
     _records = _seed();
     final stored =
@@ -291,38 +277,7 @@ class AgencyRepository {
     }
   }
 
-  Map<String, dynamic> formValues(EntityKind kind, int? id) {
-    final today = formatDate(DateTime.now());
-    final record = id == null ? null : byId(kind, id);
-    final values =
-        record?.toJson() ??
-        <String, dynamic>{
-          'type': RequestType.lateForWork.name,
-          'status': RequestStatus.newRequest.name,
-          'urgency': '1',
-          'employeeIds': <int>[],
-          'scenarioIds': <int>[],
-          'joinedAt': today,
-          'hiredAt': today,
-          'createdAt': today,
-          'cardIssuedAt': today,
-          'cardPoints': '0',
-          'experienceYears': '0',
-          'durationMinutes': '30',
-        };
-    if (record is Client) {
-      values['cardNumber'] = record.card?.number ?? '';
-      values['cardIssuedAt'] = formatDate(
-        record.card?.issuedAt ?? record.joinedAt,
-      );
-      values['cardPoints'] = '${record.card?.points ?? 0}';
-    }
-    for (final key in ['eventDate', 'joinedAt', 'hiredAt', 'createdAt']) {
-      if (values[key] != null) values[key] = formatDate(readDate(values[key]));
-    }
-    return values;
-  }
-
+  @override
   Future<AgencyRecord> saveForm(
     EntityKind kind,
     Map<String, dynamic> draft,
@@ -394,6 +349,7 @@ class AgencyRepository {
     };
   }
 
+  @override
   Future<void> deleteMany(
     EntityKind kind,
     Iterable<int> ids, {
@@ -421,6 +377,7 @@ class AgencyRepository {
     await _commit(next, {..._nextIds});
   }
 
+  @override
   Future<void> restore(EntityKind kind, int id) async {
     final record = byId(kind, id);
     if (record == null) throw StateError('Запись не найдена');
@@ -437,6 +394,7 @@ class AgencyRepository {
     await _commit(next, {..._nextIds});
   }
 
+  @override
   Future<PageResult<AgencyRecord>> find(
     EntityKind kind,
     RecordQuery query,

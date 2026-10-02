@@ -1,12 +1,12 @@
 import '../models/agency_record.dart';
 import '../models/alibi_request.dart';
 import '../models/json_readers.dart';
-import '../repositories/agency_repository.dart';
+import '../repositories/agency_repository_contract.dart';
 
 Map<String, String> recordDetails(
   EntityKind kind,
   AgencyRecord record,
-  AgencyRepository repository,
+  AgencyRepositoryContract repository,
 ) {
   final json = record.toJson();
   String linked(EntityKind target, Object? ids) =>

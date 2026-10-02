@@ -6,14 +6,64 @@ import '../models/alibi_request.dart';
 import 'record_details.dart';
 import '../state/agency_state.dart';
 import '../widgets/app_shell.dart';
+import '../widgets/load_status.dart';
 
-class AgencyDetailScreen extends StatelessWidget {
+class AgencyDetailScreen extends StatefulWidget {
   const AgencyDetailScreen({super.key, required this.kind, required this.id});
   final EntityKind kind;
   final int id;
 
   @override
-  Widget build(BuildContext context) {
+  State<AgencyDetailScreen> createState() => _AgencyDetailScreenState();
+}
+
+class _AgencyDetailScreenState extends State<AgencyDetailScreen> {
+  Future<void>? _loading;
+  EntityKind get kind => widget.kind;
+  int get id => widget.id;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loading ??= context.read<AgencyState>().repository.prepareDetail(kind, id);
+  }
+
+  @override
+  void didUpdateWidget(covariant AgencyDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.kind != kind || oldWidget.id != id) {
+      _loading = context.read<AgencyState>().repository.prepareDetail(kind, id);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<void>(
+    future: _loading,
+    builder: (context, snapshot) {
+      if (snapshot.connectionState != ConnectionState.done) {
+        return AppShell(
+          title: 'Загрузка карточки',
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      }
+      if (snapshot.hasError) {
+        return AppShell(
+          title: 'Загрузка карточки',
+          child: LoadError(
+            error: snapshot.error,
+            onRetry: () => setState(
+              () => _loading = context
+                  .read<AgencyState>()
+                  .repository
+                  .prepareDetail(kind, id),
+            ),
+          ),
+        );
+      }
+      return _buildDetail(context);
+    },
+  );
+
+  Widget _buildDetail(BuildContext context) {
     final repository = context.watch<AgencyState>().repository;
     final record = repository.byId(kind, id);
     if (record == null) {

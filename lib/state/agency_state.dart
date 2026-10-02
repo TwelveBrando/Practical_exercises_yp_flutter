@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
 import '../models/agency_record.dart';
-import '../repositories/agency_repository.dart';
+import '../repositories/agency_repository_contract.dart';
 
 class AgencyState extends ChangeNotifier {
   AgencyState(this.repository);
-  final AgencyRepository repository;
+  final AgencyRepositoryContract repository;
   int revision = 0;
 
   Future<AgencyRecord> save(

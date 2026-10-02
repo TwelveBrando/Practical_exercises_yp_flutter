@@ -7,9 +7,11 @@ import '../models/alibi_request.dart';
 import '../models/json_readers.dart';
 import '../models/page_result.dart';
 import '../models/record_query.dart';
-import '../repositories/agency_repository.dart';
+import '../repositories/repository_exceptions.dart';
+import '../repositories/agency_repository_contract.dart';
+import '../core/api_exceptions.dart';
+import '../widgets/load_status.dart';
 import '../state/agency_state.dart';
-import '../validation/record_fields.dart';
 import '../validation/validators.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/entity_table.dart';
@@ -67,7 +69,7 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
     final state = context.watch<AgencyState>();
     if (_revision != state.revision || _future == null) {
       _revision = state.revision;
-      _future = state.repository.find(widget.kind, widget.query);
+      _future = _loadCatalog(state.repository);
       _selected.removeWhere(
         (id) => state.repository.byId(widget.kind, id) == null,
       );
@@ -84,10 +86,7 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
       _sync();
       _fromError = null;
       _toError = null;
-      _future = context.read<AgencyState>().repository.find(
-        widget.kind,
-        widget.query,
-      );
+      _future = _loadCatalog(context.read<AgencyState>().repository);
     }
   }
 
@@ -102,6 +101,20 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
       }
     }
     context.go(Uri(path: widget.kind.path, queryParameters: params).toString());
+  }
+
+  Future<PageResult<AgencyRecord>> _loadCatalog(
+    AgencyRepositoryContract repository,
+  ) async {
+    final result = await repository.find(widget.kind, widget.query);
+    if (mounted) setState(() {});
+    return result;
+  }
+
+  void _retry() {
+    setState(() {
+      _future = _loadCatalog(context.read<AgencyState>().repository);
+    });
   }
 
   void _applyDates() {
@@ -172,6 +185,8 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
       if (mounted) setState(() => _selected.removeAll(selected));
     } on RelatedRecordsException catch (error) {
       if (mounted) await _message(error.toString());
+    } on ApiException catch (error) {
+      if (mounted) await _message(error.message);
     } catch (_) {
       if (mounted) {
         await _message('Не удалось сохранить изменение. Попробуйте ещё раз.');
@@ -186,6 +201,8 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
     setState(() => _busy = true);
     try {
       await context.read<AgencyState>().restore(widget.kind, id);
+    } on ApiException catch (error) {
+      if (mounted) await _message(error.message);
     } catch (_) {
       if (mounted) await _message('Не удалось восстановить запись.');
     } finally {
@@ -193,7 +210,9 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
     }
   }
 
-  List<TableColumnSpec<AgencyRecord>> _columns(AgencyRepository repository) {
+  List<TableColumnSpec<AgencyRecord>> _columns(
+    AgencyRepositoryContract repository,
+  ) {
     TableColumnSpec<AgencyRecord> text(
       String key,
       String label, {
@@ -304,7 +323,7 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
   Widget build(BuildContext context) {
     final repository = context.watch<AgencyState>().repository;
     final query = widget.query;
-    final options = categoryOptions(widget.kind, repository.catalogs);
+    final options = repository.filterOptions(widget.kind);
     return AppShell(
       title: '${widget.kind.label} агентства',
       child: SingleChildScrollView(
@@ -350,6 +369,7 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
                     ),
                     onChanged: (value) {
                       _debounce?.cancel();
+                      repository.cancelFind();
                       _debounce = Timer(
                         const Duration(milliseconds: 350),
                         () => _navigate({'search': value}),
@@ -504,20 +524,11 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
                 if (snapshot.connectionState != ConnectionState.done) {
                   return const Center(child: CircularProgressIndicator());
                 }
+                if (snapshot.error is RequestCancelledException) {
+                  return const Center(child: CircularProgressIndicator());
+                }
                 if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.error_outline, size: 40),
-                        const Text('Не удалось загрузить записи'),
-                        FilledButton(
-                          onPressed: () => _navigate({'demoError': null}),
-                          child: const Text('Повторить'),
-                        ),
-                      ],
-                    ),
-                  );
+                  return LoadError(error: snapshot.error, onRetry: _retry);
                 }
                 final page = snapshot.data!;
                 if (page.items.isEmpty) {
@@ -582,7 +593,11 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
             FutureBuilder<PageResult<AgencyRecord>>(
               future: _future,
               builder: (context, snapshot) {
-                final page = snapshot.data ?? PageResult<AgencyRecord>.empty();
+                final page =
+                    snapshot.connectionState == ConnectionState.done &&
+                        !snapshot.hasError
+                    ? snapshot.data ?? PageResult<AgencyRecord>.empty()
+                    : PageResult<AgencyRecord>.empty();
                 return PaginationBar(
                   currentPage: page.page,
                   totalPages: page.totalPages,
