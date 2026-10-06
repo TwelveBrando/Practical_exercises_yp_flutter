@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/agency_record.dart';
+import '../models/app_user.dart';
+import '../state/auth_notifier.dart';
 import '../models/alibi_request.dart';
 import 'record_details.dart';
 import '../state/agency_state.dart';
@@ -21,6 +23,11 @@ class _AgencyDetailScreenState extends State<AgencyDetailScreen> {
   Future<void>? _loading;
   EntityKind get kind => widget.kind;
   int get id => widget.id;
+  String listPath(BuildContext context) =>
+      kind == EntityKind.requests &&
+          context.read<AuthNotifier>().user?.role == Role.client
+      ? '/my-requests'
+      : kind.path;
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -71,7 +78,7 @@ class _AgencyDetailScreenState extends State<AgencyDetailScreen> {
         title: 'Запись не найдена',
         child: Center(
           child: OutlinedButton(
-            onPressed: () => context.go(kind.path),
+            onPressed: () => context.go(listPath(context)),
             child: const Text('К списку'),
           ),
         ),
@@ -161,7 +168,13 @@ class _AgencyDetailScreenState extends State<AgencyDetailScreen> {
                           ],
                         ),
                       ),
-                    for (final entry in linked.entries) ...[
+                    for (final entry in linked.entries.where(
+                      (entry) => context
+                          .watch<AuthNotifier>()
+                          .user!
+                          .role
+                          .canView(entry.key),
+                    )) ...[
                       const SizedBox(height: 16),
                       Text(
                         'Связанные ${entry.key.label.toLowerCase()}',
@@ -190,7 +203,8 @@ class _AgencyDetailScreenState extends State<AgencyDetailScreen> {
                       spacing: 12,
                       runSpacing: 8,
                       children: [
-                        if (!record.isDeleted)
+                        if (!record.isDeleted &&
+                            context.watch<AuthNotifier>().can(Operation.write))
                           FilledButton.icon(
                             onPressed: () =>
                                 context.go('${kind.path}/$id/edit'),
@@ -198,7 +212,7 @@ class _AgencyDetailScreenState extends State<AgencyDetailScreen> {
                             label: const Text('Редактировать'),
                           ),
                         OutlinedButton(
-                          onPressed: () => context.go(kind.path),
+                          onPressed: () => context.go(listPath(context)),
                           child: const Text('К списку'),
                         ),
                       ],

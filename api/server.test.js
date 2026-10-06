@@ -12,6 +12,7 @@ async function fixture(t) {
   let server = createApi({ dataFile: file, log: () => {} });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   let base = `http://127.0.0.1:${server.address().port}/api`;
+  let token = (await (await fetch(base + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: 'admin', password: 'Alibi123!' }) })).json()).accessToken;
   t.after(async () => {
     await new Promise(resolve => server.close(resolve));
     if (path.dirname(folder) === os.tmpdir() && path.basename(folder).startsWith('alibi-api-test-')) fs.rmSync(folder, { recursive: true });
@@ -23,9 +24,10 @@ async function fixture(t) {
       server = createApi({ dataFile: file, log: () => {} });
       await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
       base = `http://127.0.0.1:${server.address().port}/api`;
+      token = (await (await fetch(base + '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: 'admin', password: 'Alibi123!' }) })).json()).accessToken;
     },
     async call(url, method = 'GET', body, headers = {}) {
-      const response = await fetch(base + url, { method, headers: { 'Content-Type': 'application/json', ...headers }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
+      const response = await fetch(base + url, { method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...headers }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
       return { status: response.status, headers: response.headers, body: response.status === 204 ? null : await response.json() };
     },
   };

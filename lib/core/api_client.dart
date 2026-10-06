@@ -3,7 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'api_exceptions.dart';
 import 'config.dart';
 
-Dio buildDio({String? baseUrl, String? Function()? tokenProvider}) {
+Dio buildDio({
+  String? baseUrl,
+  String? Function()? tokenProvider,
+  Future<String?> Function()? refreshToken,
+  Future<void> Function()? onUnauthorized,
+}) {
   final dio = Dio(
     BaseOptions(
       baseUrl: (baseUrl ?? apiBaseUrl).replaceFirst(RegExp(r'/+$'), ''),
@@ -44,7 +49,41 @@ Dio buildDio({String? baseUrl, String? Function()? tokenProvider}) {
           handler.next(response);
         }
       },
-      onError: (error, handler) {
+      onError: (error, handler) async {
+        final options = error.requestOptions;
+        if (error.response?.statusCode == 401 &&
+            !options.path.startsWith('/auth/') &&
+            refreshToken != null) {
+          if (options.extra['authRetried'] == true) {
+            await onUnauthorized?.call();
+          } else {
+            try {
+              final oldToken = options.headers['Authorization'];
+              final current = tokenProvider?.call();
+              final token = current != null && oldToken != 'Bearer $current'
+                  ? current
+                  : await refreshToken();
+              if (token != null) {
+                options.extra['authRetried'] = true;
+                options.headers['Authorization'] = 'Bearer $token';
+                final response = await dio.fetch<dynamic>(options);
+                handler.resolve(response);
+                return;
+              }
+            } on DioException catch (replayError) {
+              handler.next(replayError);
+              return;
+            } on NetworkException {
+              handler.next(
+                DioException(
+                  requestOptions: options,
+                  type: DioExceptionType.connectionError,
+                ),
+              );
+              return;
+            }
+          }
+        }
         if (kDebugMode) {
           debugPrint(
             '[API] ${error.requestOptions.method} ${error.requestOptions.uri} → ${error.response?.statusCode ?? error.type.name}',

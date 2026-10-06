@@ -1,5 +1,5 @@
 name: second_practice
-description: Практическая работа 4 — REST API агентства алиби
+description: Агентство алиби — REST API, авторизация и роли
 publish_to: 'none'
 version: 0.1.0+1
 environment:

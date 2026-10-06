@@ -2,6 +2,8 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:second_practice/state/auth_notifier.dart';
+import 'auth_fixture.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -40,6 +42,9 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final repository = AgencyRepository(await SharedPreferences.getInstance());
     await repository.initialize();
+    final auth = await testAuth();
+    final appRouter = buildRouter(auth);
+    addTearDown(appRouter.dispose);
     await repository.deleteMany(EntityKind.requests, [9]);
     final client = await repository.saveForm(EntityKind.clients, {
       ...repository.formValues(EntityKind.clients, null),
@@ -53,10 +58,14 @@ void main() {
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          ChangeNotifierProvider<AuthNotifier>(create: (_) => auth),
           ChangeNotifierProvider(create: (_) => AgencyState(repository)),
           Provider(create: (_) => FormNavigationGuard()),
         ],
-        child: RepaintBoundary(key: captureKey, child: const AlibiApp()),
+        child: RepaintBoundary(
+          key: captureKey,
+          child: AlibiApp(router: appRouter),
+        ),
       ),
     );
 

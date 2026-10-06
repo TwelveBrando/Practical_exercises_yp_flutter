@@ -6,6 +6,7 @@ class AgencyState extends ChangeNotifier {
   AgencyState(this.repository);
   final AgencyRepositoryContract repository;
   int revision = 0;
+  bool _disposed = false;
 
   Future<AgencyRecord> save(
     EntityKind kind,
@@ -14,7 +15,7 @@ class AgencyState extends ChangeNotifier {
   ) async {
     final record = await repository.saveForm(kind, values, id);
     revision++;
-    notifyListeners();
+    if (!_disposed) notifyListeners();
     return record;
   }
 
@@ -25,12 +26,18 @@ class AgencyState extends ChangeNotifier {
   }) async {
     await repository.deleteMany(kind, ids, hard: hard);
     revision++;
-    notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
   Future<void> restore(EntityKind kind, int id) async {
     await repository.restore(kind, id);
     revision++;
-    notifyListeners();
+    if (!_disposed) notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

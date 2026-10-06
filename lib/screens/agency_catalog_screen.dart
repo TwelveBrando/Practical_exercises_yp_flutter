@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/agency_record.dart';
+import '../models/app_user.dart';
+import '../state/auth_notifier.dart';
 import '../models/alibi_request.dart';
 import '../models/json_readers.dart';
 import '../models/page_result.dart';
@@ -167,10 +169,11 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
             onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('В корзину'),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Удалить навсегда'),
-          ),
+          if (context.read<AuthNotifier>().can(Operation.hardDelete))
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Удалить навсегда'),
+            ),
         ],
       ),
     );
@@ -322,6 +325,7 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
   @override
   Widget build(BuildContext context) {
     final repository = context.watch<AgencyState>().repository;
+    final auth = context.watch<AuthNotifier>();
     final query = widget.query;
     final options = repository.filterOptions(widget.kind);
     return AppShell(
@@ -377,11 +381,12 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
                     },
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: () => context.go('${widget.kind.path}/new'),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Создать'),
-                ),
+                if (auth.can(Operation.write))
+                  FilledButton.icon(
+                    onPressed: () => context.go('${widget.kind.path}/new'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Создать'),
+                  ),
                 OutlinedButton.icon(
                   onPressed: () =>
                       _navigate({'demoError': query.demoError ? null : '1'}),
@@ -482,41 +487,43 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
                         '${query.sortField},${query.ascending ? 'desc' : 'asc'}',
                   }),
                 ),
-                FilterChip(
-                  label: const Text('Показывать удалённые'),
-                  selected: query.includeDeleted,
-                  onSelected: (value) =>
-                      _navigate({'deleted': value ? '1' : null}),
-                ),
+                if (auth.can(Operation.records))
+                  FilterChip(
+                    label: const Text('Показывать удалённые'),
+                    selected: query.includeDeleted,
+                    onSelected: (value) =>
+                        _navigate({'deleted': value ? '1' : null}),
+                  ),
                 TextButton(
                   onPressed: () => context.go(widget.kind.path),
                   child: const Text('Сбросить'),
                 ),
               ],
             ),
-            SizedBox(
-              height: 48,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _selected.isEmpty
-                          ? 'Отметьте записи для массового действия'
-                          : 'Выбрано: ${_selected.length}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall,
+            if (auth.can(Operation.softDelete))
+              SizedBox(
+                height: 48,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _selected.isEmpty
+                            ? 'Отметьте записи для массового действия'
+                            : 'Выбрано: ${_selected.length}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     ),
-                  ),
-                  if (_selected.isNotEmpty)
-                    FilledButton.tonalIcon(
-                      onPressed: _busy ? null : () => _delete(_selected),
-                      icon: const Icon(Icons.delete_outline),
-                      label: const Text('Удалить'),
-                    ),
-                ],
+                    if (_selected.isNotEmpty)
+                      FilledButton.tonalIcon(
+                        onPressed: _busy ? null : () => _delete(_selected),
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Удалить'),
+                      ),
+                  ],
+                ),
               ),
-            ),
             const Divider(),
             FutureBuilder<PageResult<AgencyRecord>>(
               future: _future,
@@ -543,11 +550,13 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
                   idOf: (record) => record.id,
                   titleOf: (record) => record.name,
                   selected: _selected,
-                  onToggleSelect: (id) => setState(() {
-                    _selected.contains(id)
-                        ? _selected.remove(id)
-                        : _selected.add(id);
-                  }),
+                  onToggleSelect: !auth.can(Operation.softDelete)
+                      ? null
+                      : (id) => setState(() {
+                          _selected.contains(id)
+                              ? _selected.remove(id)
+                              : _selected.add(id);
+                        }),
                   sortField: query.sortField,
                   sortAscending: query.ascending,
                   onSort: (field) => _navigate({
@@ -555,25 +564,26 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
                         '$field,${field == query.sortField && query.ascending ? 'desc' : 'asc'}',
                   }),
                   actions: (record) => [
-                    if (record.isDeleted)
+                    if (record.isDeleted && auth.can(Operation.restore))
                       IconButton(
                         tooltip: 'Восстановить',
                         onPressed: _busy ? null : () => _restore(record.id),
                         icon: const Icon(Icons.restore),
                       )
-                    else
+                    else if (!record.isDeleted &&
+                        auth.can(Operation.softDelete))
                       IconButton(
                         tooltip: 'В корзину',
                         onPressed: _busy ? null : () => _delete([record.id]),
                         icon: const Icon(Icons.delete_outline),
                       ),
-                    if (record.isDeleted)
+                    if (record.isDeleted && auth.can(Operation.hardDelete))
                       IconButton(
                         tooltip: 'Удалить навсегда',
                         onPressed: _busy ? null : () => _delete([record.id]),
                         icon: const Icon(Icons.delete_forever),
                       )
-                    else
+                    else if (!record.isDeleted && auth.can(Operation.write))
                       IconButton(
                         tooltip: 'Редактировать',
                         onPressed: () =>

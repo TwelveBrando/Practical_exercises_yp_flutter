@@ -13,9 +13,11 @@ class ApiAgencyRepository extends AgencyRepositoryContract {
   ApiAgencyRepository(
     this._dio, {
     this.retryDelay = const Duration(milliseconds: 350),
+    this.sessionOwner,
   });
   final Dio _dio;
   final Duration retryDelay;
+  final String? sessionOwner;
   final _references = <EntityKind, List<AgencyRecord>>{};
   final _referenceLoads = <EntityKind, Future<void>>{};
   final _filters = <EntityKind, List<FieldOption>>{};
@@ -63,6 +65,7 @@ class ApiAgencyRepository extends AgencyRepositoryContract {
     _findToken?.cancel('Параметры поиска изменились');
     _findToken = null;
   }
+
   Future<T> _read<T>(Future<T> Function() action, {CancelToken? token}) async {
     for (var attempt = 0; ; attempt++) {
       if (token?.isCancelled ?? false) throw const RequestCancelledException();

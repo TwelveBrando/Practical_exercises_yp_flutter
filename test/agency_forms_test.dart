@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:second_practice/state/auth_notifier.dart';
+import 'auth_fixture.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +19,7 @@ import 'package:second_practice/state/form_navigation_guard.dart';
 
 void main() {
   late AgencyRepository repository;
+  late GoRouter appRouter;
   final captureKey = GlobalKey();
 
   setUpAll(() async {
@@ -38,14 +42,21 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     repository = AgencyRepository(await SharedPreferences.getInstance());
     await repository.initialize();
+    final auth = await testAuth();
+    appRouter = buildRouter(auth);
+    addTearDown(appRouter.dispose);
     appRouter.go('/requests');
     await tester.pumpWidget(
       MultiProvider(
         providers: [
+          ChangeNotifierProvider<AuthNotifier>(create: (_) => auth),
           ChangeNotifierProvider(create: (_) => AgencyState(repository)),
           Provider(create: (_) => FormNavigationGuard()),
         ],
-        child: RepaintBoundary(key: captureKey, child: const AlibiApp()),
+        child: RepaintBoundary(
+          key: captureKey,
+          child: AlibiApp(router: appRouter),
+        ),
       ),
     );
     await tester.pumpAndSettle();
