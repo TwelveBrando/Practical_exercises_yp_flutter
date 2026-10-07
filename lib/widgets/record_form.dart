@@ -32,7 +32,7 @@ class RecordForm extends StatelessWidget {
     key: formKey,
     child: LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth >= 720
+        final width = MediaQuery.sizeOf(context).width >= 600
             ? (constraints.maxWidth - 16) / 2
             : constraints.maxWidth;
         String? section;
@@ -147,7 +147,11 @@ class RecordForm extends StatelessWidget {
             children: [
               for (final option in field.options)
                 FilterChip(
-                  label: Text(option.label),
+                  label: Text(
+                    option.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   selected: state.value?.contains(option.value) ?? false,
                   onSelected: saving
                       ? null

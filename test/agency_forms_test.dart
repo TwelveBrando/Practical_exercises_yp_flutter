@@ -207,7 +207,7 @@ void main() {
     await open(tester, '/clients/1/edit');
     final original = repository.byId(EntityKind.clients, 1)!.name;
     await enter(tester, 'name', 'Несохранённое имя');
-    await tester.tap(find.widgetWithText(TextButton, 'Заявки'));
+    await tester.tap(find.text('Заявки'));
     await tester.pumpAndSettle();
     expect(find.text('Несохранённые изменения'), findsOneWidget);
     await press(tester, 'Остаться');

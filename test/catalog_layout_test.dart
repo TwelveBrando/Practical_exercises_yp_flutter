@@ -101,11 +101,13 @@ void main() {
         }
         expect(buttons.hitTestable(), findsWidgets);
 
-        if (width >= 1132) {
+        if (width >= 1280) {
           expect(find.byType(DataTable), findsOneWidget);
           expect(
             tester.getSize(find.byType(DataTable)).width,
-            width > 1280 ? 1248 : width - 32,
+            (width - tester.getSize(find.byType(NavigationRail)).width - 1)
+                    .clamp(0, 1280) -
+                32,
           );
           final tableRect = tester.getRect(find.byType(DataTable));
           expect(

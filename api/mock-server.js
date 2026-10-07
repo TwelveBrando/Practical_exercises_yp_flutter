@@ -185,13 +185,14 @@ if (require.main === module) {
     const index = process.argv.indexOf(name);
     return index >= 0 ? process.argv[index + 1] : fallback;
   }
-  const port = Number(argument('--port', '8080'));
-  const origin = argument('--origin', 'http://localhost:5555');
-  const dataFile = argument('--data', path.join(__dirname, 'data', 'alibi.json'));
+  const port = Number(argument('--port', process.env.PORT ?? '8080'));
+  const host = argument('--host', process.env.HOST ?? '127.0.0.1');
+  const origin = argument('--origin', process.env.FRONTEND_ORIGIN ?? 'http://localhost:5555');
+  const dataFile = argument('--data', process.env.DATA_FILE ?? path.join(__dirname, 'data', 'alibi.json'));
   const ttl = Number(argument('--ttl', '900'));
   const sessionTtl = Number(argument('--session-ttl', '3600'));
   const server = createApi({ origin, dataFile, ttl, sessionTtl });
   server.on('error', error => { console.error(`Не удалось запустить сервер: ${error.message}`); process.exitCode = 1; });
-  server.listen(port, '127.0.0.1', () => console.log(`Alibi API: http://localhost:${port}/api; разрешённый источник: ${origin}`));
+  server.listen(port, host, () => console.log(`Alibi API: http://localhost:${port}/api; разрешённый источник: ${origin}`));
 }
 module.exports = { createApi };

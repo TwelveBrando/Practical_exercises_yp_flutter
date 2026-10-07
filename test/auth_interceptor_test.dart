@@ -36,6 +36,7 @@ void main() {
       var token = 'old';
       var refreshes = 0;
       final dio = buildDio(
+        baseUrl: 'http://alibi.test/api',
         tokenProvider: () => token,
         refreshToken: () async {
           refreshes++;
@@ -58,6 +59,7 @@ void main() {
     () async {
       var refreshes = 0;
       final dio = buildDio(
+        baseUrl: 'http://alibi.test/api',
         refreshToken: () async {
           refreshes++;
           return 'new';
@@ -74,6 +76,7 @@ void main() {
     () async {
       var refreshes = 0, logouts = 0;
       final dio = buildDio(
+        baseUrl: 'http://alibi.test/api',
         refreshToken: () async {
           refreshes++;
           return 'new';
@@ -94,6 +97,7 @@ void main() {
   test('failed refresh ends original request without replay', () async {
     var refreshes = 0;
     final dio = buildDio(
+      baseUrl: 'http://alibi.test/api',
       refreshToken: () async {
         refreshes++;
         return null;

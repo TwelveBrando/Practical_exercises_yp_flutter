@@ -44,156 +44,180 @@ class EntityTable<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
-      if (constraints.maxWidth < 1100) {
+      if (MediaQuery.sizeOf(context).width < 1280) {
+        final columnsCount = constraints.maxWidth >= 600 ? 2 : 1;
         return ListView.builder(
           shrinkWrap: !scrollable,
           primary: scrollable,
           physics: scrollable ? null : const NeverScrollableScrollPhysics(),
-          itemCount: items.length,
+          itemCount: (items.length / columnsCount).ceil(),
           itemBuilder: (context, index) {
-            final item = items[index];
-            final id = idOf(item);
-            return Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        if (onToggleSelect != null)
-                          Checkbox(
-                            value: selected.contains(id),
-                            onChanged: (_) => onToggleSelect!(id),
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (
+                  var columnIndex = 0;
+                  columnIndex < columnsCount;
+                  columnIndex++
+                ) ...[
+                  if (columnIndex > 0) const SizedBox(width: 12),
+                  Expanded(
+                    child: index * columnsCount + columnIndex >= items.length
+                        ? const SizedBox.shrink()
+                        : _card(
+                            context,
+                            items[index * columnsCount + columnIndex],
                           ),
-                        Expanded(
-                          child: Text(
-                            titleOf?.call(item) ?? columns.first.label,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                        if (actions != null) ...actions!(item),
-                      ],
-                    ),
-                    ...columns
-                        .skip(titleOf == null ? 0 : 1)
-                        .map(
-                          (column) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 112,
-                                  child: Text(
-                                    column.label,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.labelMedium,
-                                  ),
-                                ),
-                                Expanded(child: column.build(item)),
-                              ],
-                            ),
-                          ),
-                        ),
-                  ],
-                ),
-              ),
+                  ),
+                ],
+              ],
             );
           },
         );
       }
-      final activeSortColumnIndex = columns.indexWhere(
-        (column) => column.sortField == sortField,
-      );
-      final rowActions = [
-        for (final item in items) actions?.call(item) ?? <Widget>[],
-      ];
-      final actionCount = rowActions.fold<int>(
-        0,
-        (largest, buttons) =>
-            buttons.length > largest ? buttons.length : largest,
-      );
-      final table = DataTable(
-        horizontalMargin: 12,
-        checkboxHorizontalMargin: 8,
-        columnSpacing: 24,
-        dataRowMinHeight: 64,
-        dataRowMaxHeight: 64,
-        sortColumnIndex: activeSortColumnIndex < 0
-            ? null
-            : activeSortColumnIndex + (onToggleSelect == null ? 0 : 1),
-        sortAscending: sortAscending,
-        columns: [
-          if (onToggleSelect != null)
-            const DataColumn(
-              label: Text(''),
-              columnWidth: FixedColumnWidth(60),
-            ),
-          ...columns.map(
-            (column) => DataColumn(
-              label: Flexible(child: Text(column.label, maxLines: 2)),
-              columnWidth: FlexColumnWidth(column.flex),
-              numeric: column.numeric,
-              onSort: column.sortField == null || onSort == null
-                  ? null
-                  : (columnIndex, ascending) => onSort!(column.sortField!),
-            ),
-          ),
-          if (actions != null)
-            DataColumn(
-              label: const Flexible(
-                child: Text(
-                  'Действия',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              columnWidth: FixedColumnWidth(actionCount * 48 + 24),
-            ),
-        ],
-        rows: items.asMap().entries.map((entry) {
-          final item = entry.value;
-          final id = idOf(item);
-          return DataRow(
-            selected: selected.contains(id),
-            cells: [
-              if (onToggleSelect != null)
-                DataCell(
+      return _table(context, constraints);
+    },
+  );
+
+  Widget _card(BuildContext context, T item) {
+    final id = idOf(item);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                if (onToggleSelect != null)
                   Checkbox(
                     value: selected.contains(id),
                     onChanged: (_) => onToggleSelect!(id),
                   ),
-                ),
-              ...columns.map(
-                (column) => DataCell(
-                  DefaultTextStyle.merge(
+                Expanded(
+                  child: Text(
+                    titleOf?.call(item) ?? columns.first.label,
+                    style: Theme.of(context).textTheme.titleMedium,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    child: column.build(item),
                   ),
+                ),
+              ],
+            ),
+            if (actions != null)
+              Wrap(alignment: WrapAlignment.end, children: actions!(item)),
+            ...columns
+                .skip(titleOf == null ? 0 : 1)
+                .map(
+                  (column) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 112,
+                          child: Text(
+                            column.label,
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                        ),
+                        Expanded(child: column.build(item)),
+                      ],
+                    ),
+                  ),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _table(BuildContext context, BoxConstraints constraints) {
+    final activeSortColumnIndex = columns.indexWhere(
+      (column) => column.sortField == sortField,
+    );
+    final rowActions = [
+      for (final item in items) actions?.call(item) ?? <Widget>[],
+    ];
+    final actionCount = rowActions.fold<int>(
+      0,
+      (largest, buttons) => buttons.length > largest ? buttons.length : largest,
+    );
+    final table = DataTable(
+      horizontalMargin: 12,
+      checkboxHorizontalMargin: 8,
+      columnSpacing: 24,
+      dataRowMinHeight: 64,
+      dataRowMaxHeight: 64,
+      sortColumnIndex: activeSortColumnIndex < 0
+          ? null
+          : activeSortColumnIndex + (onToggleSelect == null ? 0 : 1),
+      sortAscending: sortAscending,
+      columns: [
+        if (onToggleSelect != null)
+          const DataColumn(label: Text(''), columnWidth: FixedColumnWidth(60)),
+        ...columns.map(
+          (column) => DataColumn(
+            label: Flexible(child: Text(column.label, maxLines: 2)),
+            columnWidth: FlexColumnWidth(column.flex),
+            numeric: column.numeric,
+            onSort: column.sortField == null || onSort == null
+                ? null
+                : (columnIndex, ascending) => onSort!(column.sortField!),
+          ),
+        ),
+        if (actions != null)
+          DataColumn(
+            label: const Flexible(
+              child: Text(
+                'Действия',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            columnWidth: FixedColumnWidth(actionCount * 48 + 24),
+          ),
+      ],
+      rows: items.asMap().entries.map((entry) {
+        final item = entry.value;
+        final id = idOf(item);
+        return DataRow(
+          selected: selected.contains(id),
+          cells: [
+            if (onToggleSelect != null)
+              DataCell(
+                Checkbox(
+                  value: selected.contains(id),
+                  onChanged: (_) => onToggleSelect!(id),
                 ),
               ),
-              if (actions != null)
-                DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: rowActions[entry.key],
-                  ),
+            ...columns.map(
+              (column) => DataCell(
+                DefaultTextStyle.merge(
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  child: column.build(item),
                 ),
-            ],
-          );
-        }).toList(),
-      );
-      if (!scrollable) {
-        return SizedBox(width: constraints.maxWidth, child: table);
-      }
-      return Scrollbar(
-        child: SingleChildScrollView(
-          primary: true,
-          child: SizedBox(width: constraints.maxWidth, child: table),
-        ),
-      );
-    },
-  );
+              ),
+            ),
+            if (actions != null)
+              DataCell(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: rowActions[entry.key],
+                ),
+              ),
+          ],
+        );
+      }).toList(),
+    );
+    final horizontal = SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SizedBox(
+        width: constraints.maxWidth < 1000 ? 1000 : constraints.maxWidth,
+        child: table,
+      ),
+    );
+    if (!scrollable) return horizontal;
+    return SingleChildScrollView(primary: true, child: horizontal);
+  }
 }

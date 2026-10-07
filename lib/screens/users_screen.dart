@@ -5,6 +5,7 @@ import '../models/app_user.dart';
 import '../state/auth_notifier.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/load_status.dart';
+import '../widgets/responsive_grid.dart';
 
 class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key});
@@ -50,6 +51,7 @@ class _UsersScreenState extends State<UsersScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<Role>(
+                  isExpanded: true,
                   initialValue: role,
                   decoration: const InputDecoration(labelText: 'Роль'),
                   items: [
@@ -65,6 +67,7 @@ class _UsersScreenState extends State<UsersScreen> {
                 ),
                 if (role == Role.client)
                   DropdownButtonFormField<int>(
+                    isExpanded: true,
                     initialValue: clientId,
                     decoration: const InputDecoration(
                       labelText: 'Запись клиента',
@@ -74,7 +77,11 @@ class _UsersScreenState extends State<UsersScreen> {
                         if (item['deletedAt'] == null)
                           DropdownMenuItem(
                             value: (item['id'] as num).toInt(),
-                            child: Text(item['name'] as String),
+                            child: Text(
+                              item['name'] as String,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                     ],
                     onChanged: (value) =>
@@ -149,20 +156,28 @@ class _UsersScreenState extends State<UsersScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(_message!),
               ),
-            for (final user in users)
-              Card(
-                child: ListTile(
-                  title: Text('${user['name']} (${user['username']})'),
-                  subtitle: Text(
-                    '${Role.values.byName(user['role'] as String).label} · ${user['active'] == true ? 'Активен' : 'Отключён'}',
+            ResponsiveGrid(
+              children: [
+                for (final user in users)
+                  Card(
+                    child: ListTile(
+                      title: Text(
+                        '${user['name']} (${user['username']})',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        '${Role.values.byName(user['role'] as String).label} · ${user['active'] == true ? 'Активен' : 'Отключён'}',
+                      ),
+                      trailing: IconButton(
+                        tooltip: 'Изменить права',
+                        onPressed: _busy ? null : () => _edit(user, clients),
+                        icon: const Icon(Icons.manage_accounts_outlined),
+                      ),
+                    ),
                   ),
-                  trailing: IconButton(
-                    tooltip: 'Изменить права',
-                    onPressed: _busy ? null : () => _edit(user, clients),
-                    icon: const Icon(Icons.manage_accounts_outlined),
-                  ),
-                ),
-              ),
+              ],
+            ),
           ],
         );
       },

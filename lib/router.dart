@@ -10,7 +10,8 @@ import 'screens/agency_detail_screen.dart';
 import 'screens/not_found_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/account_screen.dart';
-import 'screens/users_screen.dart';
+import 'screens/users_screen.dart' deferred as users;
+import 'widgets/deferred_screen.dart';
 import 'state/auth_notifier.dart';
 import 'state/form_navigation_guard.dart';
 import 'widgets/app_shell.dart';
@@ -130,7 +131,10 @@ GoRouter buildRouter(AuthNotifier auth) => GoRouter(
     ),
     GoRoute(
       path: '/admin/users',
-      builder: (context, state) => const UsersScreen(),
+      builder: (context, state) => DeferredScreen(
+        load: users.loadLibrary,
+        builder: () => users.UsersScreen(),
+      ),
     ),
     for (final kind in EntityKind.values) ...[
       GoRoute(

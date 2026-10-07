@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: alibi-api
+    runtime: node
+    plan: free
+    buildCommand: node --check api/mock-server.js
+    startCommand: node api/mock-server.js
+    healthCheckPath: /api/__health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: HOST
+        value: 0.0.0.0
+      - key: FRONTEND_ORIGIN
+        value: https://twelvebrando.github.io

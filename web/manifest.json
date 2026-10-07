@@ -1,12 +1,12 @@
 {
-    "name": "second_practice",
-    "short_name": "second_practice",
+    "name": "Агентство Alibi",
+    "short_name": "Alibi",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#7A4E56",
+    "theme_color": "#7A4E56",
+    "description": "Заявки и услуги агентства Alibi",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {

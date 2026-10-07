@@ -70,6 +70,7 @@ class AlibiApp extends StatelessWidget {
     title: 'Агентство Alibi',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
+      fontFamily: 'Roboto',
       colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF7A4E56)),
       scaffoldBackgroundColor: const Color(0xFFFAF8F6),
       useMaterial3: true,

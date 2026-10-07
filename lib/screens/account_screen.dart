@@ -6,6 +6,7 @@ import '../models/alibi_request.dart';
 import '../state/auth_notifier.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/load_status.dart';
+import '../widgets/responsive_grid.dart';
 
 enum AccountSection { client, work, statistics }
 
@@ -105,49 +106,55 @@ class _AccountScreenState extends State<AccountScreen> {
                   padding: EdgeInsets.all(20),
                   child: Text('У вас пока нет заявок.'),
                 ),
-              for (final item in items)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${item['code']} — ${item['title']}',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Статус: ${requestStatusLabels[RequestStatus.values.byName(item['status'] as String)]}',
-                        ),
-                        Text(
-                          'Дата события: ${(item['eventDate'] as String).split('T').first}',
-                        ),
-                        Wrap(
-                          spacing: 12,
+              ResponsiveGrid(
+                children: [
+                  for (final item in items)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            TextButton(
-                              onPressed: () =>
-                                  context.go('/requests/${item['id']}'),
-                              child: const Text('Открыть заявку'),
+                            Text(
+                              '${item['code']} — ${item['title']}',
+                              style: Theme.of(context).textTheme.titleMedium,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            if (item['deletedAt'] == null &&
-                                [
-                                  'newRequest',
-                                  'inProgress',
-                                ].contains(item['status']))
-                              OutlinedButton(
-                                onPressed: _busy
-                                    ? null
-                                    : () => _reschedule(item),
-                                child: const Text('Перенести дату'),
-                              ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Статус: ${requestStatusLabels[RequestStatus.values.byName(item['status'] as String)]}',
+                            ),
+                            Text(
+                              'Дата события: ${(item['eventDate'] as String).split('T').first}',
+                            ),
+                            Wrap(
+                              spacing: 12,
+                              children: [
+                                TextButton(
+                                  onPressed: () =>
+                                      context.go('/requests/${item['id']}'),
+                                  child: const Text('Открыть заявку'),
+                                ),
+                                if (item['deletedAt'] == null &&
+                                    [
+                                      'newRequest',
+                                      'inProgress',
+                                    ].contains(item['status']))
+                                  OutlinedButton(
+                                    onPressed: _busy
+                                        ? null
+                                        : () => _reschedule(item),
+                                    child: const Text('Перенести дату'),
+                                  ),
+                              ],
+                            ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
+                ],
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -186,19 +193,23 @@ class _AccountScreenState extends State<AccountScreen> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 12),
-              for (final row in rows)
-                Card(
-                  child: ListTile(
-                    title: Text(
-                      requestStatusLabels[RequestStatus.values.byName(
-                        row['status'] as String,
-                      )]!,
+              ResponsiveGrid(
+                children: [
+                  for (final row in rows)
+                    Card(
+                      child: ListTile(
+                        title: Text(
+                          requestStatusLabels[RequestStatus.values.byName(
+                            row['status'] as String,
+                          )]!,
+                        ),
+                        trailing: Text('${row['count']}'),
+                        onTap: () =>
+                            context.go('/requests?status=${row['status']}'),
+                      ),
                     ),
-                    trailing: Text('${row['count']}'),
-                    onTap: () =>
-                        context.go('/requests?status=${row['status']}'),
-                  ),
-                ),
+                ],
+              ),
               const SizedBox(height: 12),
               const Text(
                 'Откройте группу заявок, чтобы назначить исполнителей, изменить статус или завершить работу.',
@@ -221,18 +232,22 @@ class _AccountScreenState extends State<AccountScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            for (final row
-                in (data['catalogs'] as List).cast<Map<String, dynamic>>())
-              Card(
-                child: ListTile(
-                  title: Text(labels[row['kind']]!),
-                  subtitle: Text(
-                    'Активных: ${row['active']} · В корзине: ${row['deleted']}',
+            ResponsiveGrid(
+              children: [
+                for (final row
+                    in (data['catalogs'] as List).cast<Map<String, dynamic>>())
+                  Card(
+                    child: ListTile(
+                      title: Text(labels[row['kind']]!),
+                      subtitle: Text(
+                        'Активных: ${row['active']} · В корзине: ${row['deleted']}',
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.go('/${row['kind']}'),
+                    ),
                   ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.go('/${row['kind']}'),
-                ),
-              ),
+              ],
+            ),
           ],
         );
       },

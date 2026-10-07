@@ -145,6 +145,8 @@ class _AgencyDetailScreenState extends State<AgencyDetailScreen> {
                     Text(
                       record.name,
                       style: Theme.of(context).textTheme.headlineSmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 20),
                     for (final row in rows.entries)
@@ -191,6 +193,8 @@ class _AgencyDetailScreenState extends State<AgencyDetailScreen> {
                             ActionChip(
                               label: Text(
                                 '${item.name}${item.isDeleted ? ' (в корзине)' : ''}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                               onPressed: () =>
                                   context.go('${entry.key.path}/${item.id}'),

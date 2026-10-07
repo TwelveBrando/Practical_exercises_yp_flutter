@@ -66,7 +66,7 @@ void main() {
   void setup(
     FutureOr<ResponseBody> Function(RequestOptions, Future<void>?) respond,
   ) {
-    dio = buildDio();
+    dio = buildDio(baseUrl: 'http://alibi.test/api');
     adapter = StubAdapter(respond);
     dio.httpClientAdapter = adapter;
     repository = ApiAgencyRepository(dio, retryDelay: Duration.zero);

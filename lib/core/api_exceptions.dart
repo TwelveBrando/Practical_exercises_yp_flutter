@@ -93,7 +93,7 @@ ApiException mapDioError(DioException error) {
     ),
     DioExceptionType.connectionError ||
     DioExceptionType.unknown => const NetworkException(
-      'Не удалось соединиться с сервером. Если сервер запущен, откройте консоль браузера и проверьте ошибку CORS.',
+      'Сервер недоступен. Проверьте соединение и нажмите «Повторить».',
     ),
     _ => const ServerException(),
   };
