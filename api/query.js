@@ -1,6 +1,7 @@
 'use strict';
 const { dateKeys, HttpError } = require('./validation');
 const categoryKeys = { requests: 'type', clients: 'city', employees: 'specialty', services: 'category', scenarios: 'serviceId', cards: 'clientId', contracts: 'status', payments: 'method' };
+const metricKeys = { requests: 'urgency', clients: null, employees: 'experienceYears', services: 'price', scenarios: 'durationMinutes', cards: 'points', contracts: 'amount', payments: 'amount' };
 const requestTypeLabels = { lateForWork: 'Опоздание', missedMeeting: 'Пропущенная встреча', missedDeadline: 'Сорванный срок', awkwardEvent: 'Неловкое событие' };
 const labels = { contracts: { draft: 'Черновик', signed: 'Подписан', completed: 'Исполнен', cancelled: 'Отменён' }, payments: { cash: 'Наличные', card: 'Банковская карта', transfer: 'Перевод' } };
 function filters(kind, records) {
@@ -15,12 +16,23 @@ function page(kind, records, params) {
   for (const value of [from, to]) {
     if (value != null && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value)))) throw new HttpError(400, 'Неверный диапазон дат');
   }
+  const bounds = ['valueFrom', 'valueTo'].map(key => {
+    if (!params.has(key)) return null;
+    const text = params.get(key);
+    const value = Number(text);
+    if (!/^\d+$/.test(text) || !Number.isSafeInteger(value) || value > 10000000) throw new HttpError(400, 'Числовой фильтр: целое число от 0 до 10000000');
+    return value;
+  });
+  if (bounds[0] != null && bounds[1] != null && bounds[0] > bounds[1]) throw new HttpError(400, 'Конец числового диапазона меньше начала');
   const size = Math.min(100, Math.max(1, Number.parseInt(params.get('size'), 10) || 10));
   let result = records[kind].filter(item => {
     if (item.deletedAt && params.get('includeDeleted') !== 'true') return false;
     if (search && ![item.name, item.title, item.code, item.email, item.description, item.id].join(' ').toLowerCase().includes(search)) return false;
     if (params.has('category') && String(item[categoryKeys[kind]]) !== params.get('category')) return false;
     if (params.has('status') && item.status !== params.get('status')) return false;
+    const metric = kind === 'clients' ? item.card?.points ?? 0 : item[metricKeys[kind]];
+    if (bounds[0] != null && metric < bounds[0]) return false;
+    if (bounds[1] != null && metric > bounds[1]) return false;
     const date = item[dateKeys[kind]].slice(0, 10);
     return (!from || date >= from) && (!to || date <= to);
   });

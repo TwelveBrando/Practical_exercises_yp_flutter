@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:second_practice/models/record_query.dart';
 import 'package:second_practice/models/agency_service.dart';
 import 'package:second_practice/models/client.dart';
 import 'package:second_practice/models/alibi_request.dart';
@@ -6,6 +7,21 @@ import 'package:second_practice/models/json_readers.dart';
 import 'package:second_practice/models/page_result.dart';
 
 void main() {
+  test('shared catalog link preserves zero and upper numeric bounds', () {
+    final query = RecordQuery.fromUri(
+      Uri.parse(
+        '/contracts?category=signed&dateFrom=2026-01-01&valueFrom=0&valueTo=650&page=2',
+      ),
+    );
+    final restored = RecordQuery.fromUri(
+      Uri(path: '/contracts', queryParameters: query.params),
+    );
+    expect(restored.valueFrom, 0);
+    expect(restored.valueTo, 650);
+    expect(restored.category, 'signed');
+    expect(restored.dateFrom, '2026-01-01');
+    expect(restored.page, 2);
+  });
   test('client tolerates absent fields and malformed card', () {
     final client = Client.fromJson({'id': '7', 'card': 'invalid'});
     expect(client.id, 7);

@@ -147,6 +147,8 @@ class ApiAgencyRepository extends AgencyRepositoryContract {
           if (query.status != null) 'status': query.status,
           if (query.dateFrom != null) 'dateFrom': query.dateFrom,
           if (query.dateTo != null) 'dateTo': query.dateTo,
+          if (query.valueFrom != null) 'valueFrom': query.valueFrom,
+          if (query.valueTo != null) 'valueTo': query.valueTo,
           'sort': '${query.sortField},${query.ascending ? 'asc' : 'desc'}',
           'page': query.page,
           'size': query.size,

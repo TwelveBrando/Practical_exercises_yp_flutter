@@ -30,6 +30,25 @@ extension EntityKindLabels on EntityKind {
     EntityKind.contracts => 'договор',
     EntityKind.payments => 'платёж',
   };
+  String get metricLabel => switch (this) {
+    EntityKind.requests => 'Срочность',
+    EntityKind.clients || EntityKind.cards => 'Баллы',
+    EntityKind.employees => 'Стаж (лет)',
+    EntityKind.services => 'Цена (₽)',
+    EntityKind.scenarios => 'Длительность (мин.)',
+    EntityKind.contracts || EntityKind.payments => 'Сумма (₽)',
+  };
+  int metricValue(Map<String, dynamic> json) => switch (this) {
+    EntityKind.requests => (json['urgency'] as num).toInt(),
+    EntityKind.clients =>
+      ((json['card'] as Map?)?['points'] as num?)?.toInt() ?? 0,
+    EntityKind.cards => (json['points'] as num).toInt(),
+    EntityKind.employees => (json['experienceYears'] as num).toInt(),
+    EntityKind.services => (json['price'] as num).toInt(),
+    EntityKind.scenarios => (json['durationMinutes'] as num).toInt(),
+    EntityKind.contracts ||
+    EntityKind.payments => (json['amount'] as num).toInt(),
+  };
   String get path => '/$name';
 }
 

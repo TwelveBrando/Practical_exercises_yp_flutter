@@ -102,6 +102,8 @@ void main() {
         search: 'тест',
         category: 'lateForWork',
         status: 'ready',
+        valueFrom: 1,
+        valueTo: 3,
         page: 2,
         size: 25,
         ascending: true,
@@ -124,6 +126,11 @@ void main() {
       adapter.requests.single.queryParameters,
       containsPair('__delay', 1500),
     );
+    expect(
+      adapter.requests.single.queryParameters,
+      containsPair('valueFrom', 1),
+    );
+    expect(adapter.requests.single.queryParameters, containsPair('valueTo', 3));
     expect(adapter.requests.single.uri.path, '/api/requests');
   });
   test('422 from a write reaches the form with field names', () async {

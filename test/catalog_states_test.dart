@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -61,6 +62,40 @@ void main() {
     await tester.pump();
     return repository;
   }
+
+  testWidgets(
+    'phone numeric filter validates the interval and updates the shared URL',
+    (tester) async {
+      await open(tester, width: 360);
+      await tester.pumpAndSettle();
+      Finder field(String label) => find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField && widget.decoration?.labelText == label,
+      );
+      await tester.enterText(field('Цена (₽) от'), '700');
+      await tester.enterText(field('Цена (₽) до'), '500');
+      final apply = find.widgetWithText(OutlinedButton, 'Применить диапазон');
+      await tester.ensureVisible(apply);
+      await tester.tap(apply);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Значение должно быть не меньше начального'),
+        findsOneWidget,
+      );
+      await tester.enterText(field('Цена (₽) от'), '500');
+      await tester.ensureVisible(apply);
+      await tester.tap(apply);
+      await tester.pumpAndSettle();
+      final uri = GoRouter.of(
+        tester.element(apply),
+      ).routeInformationProvider.value.uri;
+      expect(uri.queryParameters['valueFrom'], '500');
+      expect(uri.queryParameters['valueTo'], '500');
+      expect(find.text('Бытовое объяснение'), findsOneWidget);
+      expect(find.text('Срочная подготовка'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('catalog shows loading until response arrives', (tester) async {
     final pending = Completer<PageResult<AgencyRecord>>();

@@ -513,6 +513,9 @@ class AgencyRepository extends AgencyRepositoryContract {
         EntityKind.contracts => json['status'],
         EntityKind.payments => json['method'],
       };
+      final metric = kind.metricValue(json);
+      if (query.valueFrom != null && metric < query.valueFrom!) return false;
+      if (query.valueTo != null && metric > query.valueTo!) return false;
       if (query.category != null && category != query.category) return false;
       if (query.status != null && json['status'] != query.status) return false;
       if (start != null && record.date.isBefore(start)) return false;

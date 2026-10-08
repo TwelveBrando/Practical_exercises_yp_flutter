@@ -5,6 +5,8 @@ class RecordQuery {
     this.status,
     this.dateFrom,
     this.dateTo,
+    this.valueFrom,
+    this.valueTo,
     this.sortField = 'date',
     this.ascending = false,
     this.page = 1,
@@ -19,6 +21,8 @@ class RecordQuery {
   final String? status;
   final String? dateFrom;
   final String? dateTo;
+  final int? valueFrom;
+  final int? valueTo;
   final String sortField;
   final bool ascending;
   final int page;
@@ -38,6 +42,8 @@ class RecordQuery {
       status: params['status'],
       dateFrom: params['dateFrom'],
       dateTo: params['dateTo'],
+      valueFrom: int.tryParse(params['valueFrom'] ?? ''),
+      valueTo: int.tryParse(params['valueTo'] ?? ''),
       sortField: sort.first,
       ascending: sort.length < 2 || sort[1] != 'desc',
       page: (int.tryParse(params['page'] ?? '') ?? 1).clamp(1, 9999),
@@ -55,6 +61,8 @@ class RecordQuery {
     'status': ?status,
     'dateFrom': ?dateFrom,
     'dateTo': ?dateTo,
+    if (valueFrom != null) 'valueFrom': '$valueFrom',
+    if (valueTo != null) 'valueTo': '$valueTo',
     'sort': '$sortField,${ascending ? 'asc' : 'desc'}',
     'page': '$page',
     'size': '$size',

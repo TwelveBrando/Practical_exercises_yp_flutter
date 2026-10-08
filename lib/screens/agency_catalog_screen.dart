@@ -37,6 +37,10 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
   final _search = TextEditingController();
   final _from = TextEditingController();
   final _to = TextEditingController();
+  final _valueFrom = TextEditingController();
+  final _valueTo = TextEditingController();
+  String? _valueFromError;
+  String? _valueToError;
   final _selected = <int>{};
   Timer? _debounce;
   Future<PageResult<AgencyRecord>>? _future;
@@ -64,6 +68,8 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
     update(_search, widget.query.search);
     update(_from, widget.query.dateFrom ?? '');
     update(_to, widget.query.dateTo ?? '');
+    update(_valueFrom, widget.query.valueFrom?.toString() ?? '');
+    update(_valueTo, widget.query.valueTo?.toString() ?? '');
   }
 
   @override
@@ -89,6 +95,8 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
       _sync();
       _fromError = null;
       _toError = null;
+      _valueFromError = null;
+      _valueToError = null;
       _future = _loadCatalog(context.read<AgencyState>().repository);
     }
   }
@@ -134,6 +142,29 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
     });
     if (_fromError == null && _toError == null) {
       _navigate({'dateFrom': _from.text, 'dateTo': _to.text});
+    }
+  }
+
+  void _applyValues() {
+    setState(() {
+      _valueFromError = _valueFrom.text.isEmpty
+          ? null
+          : Validators.integer(_valueFrom.text, min: 0, max: 10000000);
+      _valueToError = _valueTo.text.isEmpty
+          ? null
+          : Validators.integer(_valueTo.text, min: 0, max: 10000000);
+      final from = int.tryParse(_valueFrom.text);
+      final to = int.tryParse(_valueTo.text);
+      if (_valueFromError == null &&
+          _valueToError == null &&
+          from != null &&
+          to != null &&
+          from > to) {
+        _valueToError = 'Значение должно быть не меньше начального';
+      }
+    });
+    if (_valueFromError == null && _valueToError == null) {
+      _navigate({'valueFrom': _valueFrom.text, 'valueTo': _valueTo.text});
     }
   }
 
@@ -359,6 +390,8 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
     _search.dispose();
     _from.dispose();
     _to.dispose();
+    _valueFrom.dispose();
+    _valueTo.dispose();
     super.dispose();
   }
 
@@ -499,6 +532,34 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
                 OutlinedButton(
                   onPressed: _applyDates,
                   child: const Text('Применить даты'),
+                ),
+                SizedBox(
+                  width: 165,
+                  child: TextField(
+                    controller: _valueFrom,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: '${widget.kind.metricLabel} от',
+                      errorText: _valueFromError,
+                    ),
+                    onSubmitted: (_) => _applyValues(),
+                  ),
+                ),
+                SizedBox(
+                  width: 165,
+                  child: TextField(
+                    controller: _valueTo,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: '${widget.kind.metricLabel} до',
+                      errorText: _valueToError,
+                    ),
+                    onSubmitted: (_) => _applyValues(),
+                  ),
+                ),
+                OutlinedButton(
+                  onPressed: _applyValues,
+                  child: const Text('Применить диапазон'),
                 ),
                 FilterMenu<String>(
                   value: query.sortField,
