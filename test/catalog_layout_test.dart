@@ -21,14 +21,6 @@ void main() {
     final icons = FontLoader('MaterialIcons');
     icons.addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
     await icons.load();
-    final font = File('C:/Windows/Fonts/arial.ttf');
-    if (font.existsSync()) {
-      final loader = FontLoader('Roboto');
-      loader.addFont(
-        font.readAsBytes().then((bytes) => ByteData.sublistView(bytes)),
-      );
-      await loader.load();
-    }
   });
 
   testWidgets('catalog actions stay visible and cards can scroll', (
@@ -99,6 +91,8 @@ void main() {
           expect(rect.left, greaterThanOrEqualTo(16));
           expect(rect.right, lessThanOrEqualTo(width - 16));
         }
+        await tester.ensureVisible(buttons.first);
+        await tester.pumpAndSettle();
         expect(buttons.hitTestable(), findsWidgets);
 
         if (width >= 1280) {
@@ -123,7 +117,12 @@ void main() {
           }
         } else {
           expect(find.byType(DataTable), findsNothing);
-          final list = find.byType(SingleChildScrollView).first;
+          final list = find
+              .ancestor(
+                of: buttons.first,
+                matching: find.byType(SingleChildScrollView),
+              )
+              .first;
           final scrollable = find.descendant(
             of: list,
             matching: find.byType(Scrollable),
@@ -168,6 +167,10 @@ void main() {
       tester.view.physicalSize = const Size(360, 900);
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(
+        find.widgetWithIcon(IconButton, Icons.open_in_new).first,
+      );
+      await tester.pumpAndSettle();
       await tester.tap(
         find.widgetWithIcon(IconButton, Icons.open_in_new).hitTestable().first,
       );
