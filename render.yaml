@@ -3,7 +3,7 @@ services:
     name: alibi-api
     runtime: node
     plan: free
-    buildCommand: node --check api/mock-server.js
+    buildCommand: npm ci --omit=dev && node --check api/mock-server.js
     startCommand: node api/mock-server.js
     healthCheckPath: /api/__health
     autoDeployTrigger: commit

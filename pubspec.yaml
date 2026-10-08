@@ -1,5 +1,5 @@
 name: second_practice
-description: Агентство алиби — REST API, авторизация и роли
+description: Агентство Alibi
 publish_to: 'none'
 version: 0.1.0+1
 environment:

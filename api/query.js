@@ -1,10 +1,12 @@
 'use strict';
 const { dateKeys, HttpError } = require('./validation');
-const categoryKeys = { requests: 'type', clients: 'city', employees: 'specialty', services: 'category', scenarios: 'serviceId' };
+const categoryKeys = { requests: 'type', clients: 'city', employees: 'specialty', services: 'category', scenarios: 'serviceId', cards: 'clientId', contracts: 'status', payments: 'method' };
 const requestTypeLabels = { lateForWork: 'Опоздание', missedMeeting: 'Пропущенная встреча', missedDeadline: 'Сорванный срок', awkwardEvent: 'Неловкое событие' };
+const labels = { contracts: { draft: 'Черновик', signed: 'Подписан', completed: 'Исполнен', cancelled: 'Отменён' }, payments: { cash: 'Наличные', card: 'Банковская карта', transfer: 'Перевод' } };
 function filters(kind, records) {
+  if (kind === 'cards') return records.clients.map(item => ({ value: String(item.id), label: item.name }));
   if (kind === 'scenarios') return records.services.map(item => ({ value: String(item.id), label: item.name }));
-  return [...new Set(records[kind].map(item => String(item[categoryKeys[kind]])))].sort().map(value => ({ value, label: kind === 'requests' ? requestTypeLabels[value] ?? value : value }));
+  return [...new Set(records[kind].map(item => String(item[categoryKeys[kind]])))].sort().map(value => ({ value, label: kind === 'requests' ? requestTypeLabels[value] ?? value : labels[kind]?.[value] ?? value }));
 }
 function page(kind, records, params) {
   const search = (params.get('search') ?? '').trim().toLowerCase();
@@ -23,7 +25,7 @@ function page(kind, records, params) {
     return (!from || date >= from) && (!to || date <= to);
   });
   const [field = 'date', direction = 'desc'] = (params.get('sort') ?? 'date,desc').split(',');
-  if (!['date', 'name', 'title', 'price', 'urgency', 'durationMinutes'].includes(field) || !['asc', 'desc'].includes(direction)) throw new HttpError(400, 'Неверная сортировка');
+  if (!['date', 'name', 'title', 'price', 'urgency', 'durationMinutes', 'amount', 'points'].includes(field) || !['asc', 'desc'].includes(direction)) throw new HttpError(400, 'Неверная сортировка');
   const get = item => field === 'date' ? item[dateKeys[kind]] : field === 'name' || field === 'title' ? item.name ?? item.title : item[field];
   result.sort((a, b) => {
     const first = get(a), second = get(b);
@@ -46,18 +48,29 @@ function expand(kind, item, records) {
   } else if (kind === 'scenarios') {
     result.service = records.services.find(record => record.id === item.serviceId) ?? null;
     delete result.serviceId;
+  } else if (kind === 'cards') {
+    result.client = records.clients.find(record => record.id === item.clientId) ?? null;
+  } else if (kind === 'contracts') {
+    result.request = records.requests.find(record => record.id === item.requestId) ?? null;
+  } else if (kind === 'payments') {
+    result.contract = records.contracts.find(record => record.id === item.contractId) ?? null;
   }
   return result;
 }
 function relations(kind, item, records) {
   if (kind === 'requests') return {
+    contracts: records.contracts.filter(record => record.requestId === item.id),
     clients: records.clients.filter(record => record.id === item.clientId),
     services: records.services.filter(record => record.id === item.serviceId),
     employees: records.employees.filter(record => item.employeeIds.includes(record.id)),
     scenarios: records.scenarios.filter(record => item.scenarioIds.includes(record.id)),
   };
+  if (kind === 'cards') return { clients: records.clients.filter(record => record.id === item.clientId) };
+  if (kind === 'contracts') return { requests: records.requests.filter(record => record.id === item.requestId), payments: records.payments.filter(record => record.contractId === item.id) };
+  if (kind === 'payments') return { contracts: records.contracts.filter(record => record.id === item.contractId) };
   const key = { clients: 'clientId', employees: 'employeeIds', services: 'serviceId', scenarios: 'scenarioIds' }[kind];
   return {
+    ...(kind === 'clients' ? { cards: records.cards.filter(record => record.clientId === item.id) } : {}),
     requests: records.requests.filter(record => Array.isArray(record[key]) ? record[key].includes(item.id) : record[key] === item.id),
     ...(kind === 'services' ? { scenarios: records.scenarios.filter(record => record.serviceId === item.id) } : {}),
     ...(kind === 'scenarios' ? { services: records.services.filter(record => record.id === item.serviceId) } : {}),

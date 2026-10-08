@@ -7,6 +7,8 @@ import '../models/alibi_request.dart';
 import '../models/client_card.dart';
 import '../models/employee.dart';
 import '../models/scenario.dart';
+import '../models/business_record.dart';
+import '../models/pricing_quote.dart';
 import 'agency_repository_contract.dart';
 import 'repository_exceptions.dart';
 export 'repository_exceptions.dart';
@@ -129,6 +131,45 @@ class AgencyRepository extends AgencyRepositoryContract {
       EntityKind.employees: employees,
       EntityKind.services: services,
       EntityKind.scenarios: scenarios,
+      EntityKind.cards: [
+        for (final client in seedClients)
+          BusinessRecord(EntityKind.cards, {
+            'id': client.id,
+            'name': 'Карта ${client.name}',
+            'clientId': client.id,
+            'number': 'CARD-${client.id.toString().padLeft(4, '0')}',
+            'points': client.id * 10,
+            'issuedAt': client.joinedAt.toIso8601String(),
+          }),
+      ],
+      EntityKind.contracts: [
+        BusinessRecord(EntityKind.contracts, {
+          'id': 1,
+          'name': 'Договор по первой заявке',
+          'code': 'CON-0001',
+          'requestId': 1,
+          'status': 'draft',
+          'discountPercent': 0,
+          'amount': 650,
+          'pricing': PricingQuote.calculate(
+            base: 500,
+            urgencyLevel: 1,
+            preparationMinutes: 15,
+          ).toJson(),
+          'createdAt': date.toIso8601String(),
+        }),
+      ],
+      EntityKind.payments: [
+        BusinessRecord(EntityKind.payments, {
+          'id': 1,
+          'name': 'Первый платёж',
+          'contractId': 1,
+          'amount': 100,
+          'method': 'card',
+          'status': 'paid',
+          'paidAt': date.toIso8601String(),
+        }),
+      ],
     };
   }
 
@@ -150,7 +191,7 @@ class AgencyRepository extends AgencyRepositoryContract {
         }
         final snapshot = readMap(decoded);
         final version = readInt(snapshot['schemaVersion'], 1);
-        if (version != 1 && version != 2) {
+        if (version != 1 && version != 2 && version != 3) {
           throw const FormatException('Неизвестная версия');
         }
         final data = readMap(snapshot['records'] ?? snapshot);
@@ -162,6 +203,15 @@ class AgencyRepository extends AgencyRepositoryContract {
         for (final kind in EntityKind.values) {
           final entries = data[kind.name];
           if (entries is! List) {
+            if (version < 3 &&
+                [
+                  EntityKind.cards,
+                  EntityKind.contracts,
+                  EntityKind.payments,
+                ].contains(kind)) {
+              _records[kind] = [];
+              continue;
+            }
             if (version == 1) continue;
             throw const FormatException('Не найден список');
           }
@@ -201,11 +251,24 @@ class AgencyRepository extends AgencyRepositoryContract {
           }
           _records[kind] = records;
         }
+        if (version < 3) {
+          _records[EntityKind.cards] = [
+            for (final client in _records[EntityKind.clients]!)
+              if (client.toJson()['card'] is Map)
+                BusinessRecord(EntityKind.cards, {
+                  'id': client.id,
+                  'name': 'Карта ${client.name}',
+                  'clientId': client.id,
+                  ...readMap(client.toJson()['card']),
+                  'deletedAt': client.deletedAt?.toIso8601String(),
+                }),
+          ];
+        }
         final storedIds = readMap(snapshot['nextIds']);
         _initializeIds(storedIds);
-        if (version == 1 || preferences.get(storageKey) == null) {
+        if (version < 3 || preferences.get(storageKey) == null) {
           startupNotice =
-              'Формат данных обновлён до версии 2. Старые записи сохранены.';
+              'Формат данных обновлён до версии 3. Старые записи сохранены.';
         }
       } catch (_) {
         var backedUp = false;
@@ -250,7 +313,7 @@ class AgencyRepository extends AgencyRepositoryContract {
     Map<EntityKind, List<AgencyRecord>> records,
     Map<EntityKind, int> ids,
   ) => {
-    'schemaVersion': 2,
+    'schemaVersion': 3,
     'records': {
       for (final kind in EntityKind.values)
         kind.name: records[kind]!.map((record) => record.toJson()).toList(),
@@ -312,6 +375,26 @@ class AgencyRepository extends AgencyRepositoryContract {
               .toIso8601String() ??
           DateTime.now().toIso8601String();
     }
+    if (kind == EntityKind.contracts) {
+      final request =
+          byId(EntityKind.requests, readInt(values['requestId']))!
+              as AlibiRequest;
+      final service =
+          byId(EntityKind.services, request.serviceId)! as AgencyService;
+      final minutes = request.scenarioIds.fold<int>(
+        0,
+        (sum, id) =>
+            sum + (byId(EntityKind.scenarios, id)! as Scenario).durationMinutes,
+      );
+      final quote = PricingQuote.calculate(
+        base: service.price,
+        urgencyLevel: request.urgency,
+        preparationMinutes: minutes,
+        discountPercent: readInt(values['discountPercent']),
+      );
+      values['pricing'] = quote.toJson();
+      values['amount'] = quote.total;
+    }
     final record = decode(kind, values);
     final next = {
       for (final entry in _records.entries) entry.key: [...entry.value],
@@ -335,7 +418,10 @@ class AgencyRepository extends AgencyRepositoryContract {
         requests.where((request) => request.serviceId == id).length,
       EntityKind.scenarios =>
         requests.where((request) => request.scenarioIds.contains(id)).length,
-      EntityKind.requests => 0,
+      EntityKind.requests ||
+      EntityKind.cards ||
+      EntityKind.contracts ||
+      EntityKind.payments => 0,
     };
     final scenarios = kind == EntityKind.services
         ? all(EntityKind.scenarios)
@@ -423,6 +509,9 @@ class AgencyRepository extends AgencyRepositoryContract {
         EntityKind.employees => json['specialty'],
         EntityKind.services => json['category'],
         EntityKind.scenarios => json['serviceId']?.toString(),
+        EntityKind.cards => json['clientId']?.toString(),
+        EntityKind.contracts => json['status'],
+        EntityKind.payments => json['method'],
       };
       if (query.category != null && category != query.category) return false;
       if (query.status != null && json['status'] != query.status) return false;

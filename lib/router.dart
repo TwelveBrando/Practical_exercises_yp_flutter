@@ -10,6 +10,7 @@ import 'screens/agency_detail_screen.dart';
 import 'screens/not_found_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/account_screen.dart';
+import 'screens/estimate_screen.dart';
 import 'screens/users_screen.dart' deferred as users;
 import 'widgets/deferred_screen.dart';
 import 'state/auth_notifier.dart';
@@ -46,7 +47,7 @@ bool allowedPath(Role role, String path) {
       }
       if (role == Role.client &&
           kind == EntityKind.requests &&
-          RegExp(r'^/requests/\d+$').hasMatch(path)) {
+          RegExp(r'^/requests/\d+(?:/estimate)?$').hasMatch(path)) {
         return true;
       }
       return role.canView(kind);
@@ -135,6 +136,15 @@ GoRouter buildRouter(AuthNotifier auth) => GoRouter(
         load: users.loadLibrary,
         builder: () => users.UsersScreen(),
       ),
+    ),
+    GoRoute(
+      path: '/requests/:id/estimate',
+      builder: (context, state) {
+        final id = int.tryParse(state.pathParameters['id'] ?? '');
+        return id == null
+            ? NotFoundScreen(location: state.uri.toString())
+            : EstimateScreen(requestId: id);
+      },
     ),
     for (final kind in EntityKind.values) ...[
       GoRoute(

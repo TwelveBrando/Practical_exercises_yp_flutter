@@ -1,4 +1,13 @@
-enum EntityKind { requests, clients, employees, services, scenarios }
+enum EntityKind {
+  requests,
+  clients,
+  employees,
+  services,
+  scenarios,
+  cards,
+  contracts,
+  payments,
+}
 
 extension EntityKindLabels on EntityKind {
   String get label => switch (this) {
@@ -7,6 +16,9 @@ extension EntityKindLabels on EntityKind {
     EntityKind.employees => 'Сотрудники',
     EntityKind.services => 'Услуги',
     EntityKind.scenarios => 'Сценарии',
+    EntityKind.cards => 'Карты клиентов',
+    EntityKind.contracts => 'Договоры',
+    EntityKind.payments => 'Платежи',
   };
   String get singular => switch (this) {
     EntityKind.requests => 'заявка',
@@ -14,6 +26,9 @@ extension EntityKindLabels on EntityKind {
     EntityKind.employees => 'сотрудник',
     EntityKind.services => 'услуга',
     EntityKind.scenarios => 'сценарий',
+    EntityKind.cards => 'карта клиента',
+    EntityKind.contracts => 'договор',
+    EntityKind.payments => 'платёж',
   };
   String get path => '/$name';
 }

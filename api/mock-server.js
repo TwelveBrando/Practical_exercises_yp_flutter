@@ -6,29 +6,48 @@ const { HttpError, validate, dependentCounts } = require('./validation');
 const { page, expand, relations } = require('./query');
 const { openAuth } = require('./auth');
 
-function createApi({ origin = 'http://localhost:5555', dataFile = path.join(__dirname, 'data', 'alibi.json'), authFile = path.join(path.dirname(dataFile), 'auth.json'), ttl = 900, refreshTtl = 604800, sessionTtl = 3600, now, log = console.log } = {}) {
-  const store = openStore(dataFile);
-  const auth = openAuth(authFile, store, { ttl, refreshTtl, sessionTtl, ...(now ? { now } : {}) });
-  const server = http.createServer(async (request, response) => {
+function createApi({ origin = 'http://localhost:5555', dataFile = path.join(__dirname, 'data', 'alibi.json'), authFile = path.join(path.dirname(dataFile), 'auth.json'), ttl = 900, refreshTtl = 604800, sessionTtl = 3600, now, log = console.log, persistence = null } = {}) {
+  const store = openStore(dataFile, persistence);
+  const auth = openAuth(authFile, store, { ttl, refreshTtl, sessionTtl, persistence, ...(now ? { now } : {}) });
+  let queue = Promise.resolve();
+  const server = http.createServer((request, response) => {
+    queue = queue.then(() => handle(request, response)).catch(error => { console.error(error.message); if (!response.writableEnded) response.end(); });
+  });
+  async function handle(request, response) {
+    let result;
+    try {
+      if (persistence && request.method !== 'OPTIONS') { await persistence.reload(); store.reload(); auth.reload(); }
+      await route(request, response, (status, body) => { result = { status, body }; });
+      if (persistence) {
+        if (result.status >= 400) { await persistence.reload(); store.reload(); auth.reload(); }
+        else await persistence.flush();
+      }
+    } catch (error) {
+        console.error('Ошибка базы:', error.code ?? error.name);
+        result = { status: error.code === '40001' ? 409 : 503, body: { message: error.code === '40001' ? 'Данные изменились. Повторите действие.' : 'База данных недоступна. Попробуйте ещё раз.' } };
+        response.setHeader('Access-Control-Allow-Origin', origin);
+        response.setHeader('Vary', 'Origin');
+        try { await persistence.reload(); store.reload(); auth.reload(); } catch {}
+    }
+    response.statusCode = result.status;
+    if (result.status === 204) return response.end();
+    response.setHeader('Content-Type', 'application/json; charset=utf-8');
+    response.end(JSON.stringify(result.body));
+  }
+  async function route(request, response, send) {
     response.setHeader('Access-Control-Allow-Origin', origin);
     response.setHeader('Vary', 'Origin');
     response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     response.setHeader('Access-Control-Max-Age', '86400');
     response.on('finish', () => log(`${request.method} ${request.url} → ${response.statusCode}`));
-    function send(status, body) {
-      response.statusCode = status;
-      if (status === 204) return response.end();
-      response.setHeader('Content-Type', 'application/json; charset=utf-8');
-      response.end(JSON.stringify(body));
-    }
     try {
       if (request.headers.origin && request.headers.origin !== origin) throw new HttpError(403, 'Источник клиента не разрешён. Проверьте --origin и порт Flutter.');
       if (request.method === 'OPTIONS') return send(204);
       const url = new URL(request.url, 'http://localhost');
       const delay = Math.min(10000, Math.max(0, Number(url.searchParams.get('__delay')) || 0));
       if (delay) await new Promise(resolve => setTimeout(resolve, delay));
-      if (url.pathname === '/api/__health' && request.method === 'GET') return send(200, { status: 'ok', service: 'Alibi', schemaVersion: 2 });
+      if (url.pathname === '/api/__health' && request.method === 'GET') return send(200, { status: 'ok', service: 'Alibi', schemaVersion: 3, storage: persistence ? 'PostgreSQL' : 'JSON' });
       if (url.pathname.startsWith('/api/auth/')) {
         const command = url.pathname.slice('/api/auth/'.length);
         if (command === 'me' && request.method === 'GET') return send(200, auth.userView(auth.authenticate(request.headers.authorization).user));
@@ -75,6 +94,14 @@ function createApi({ origin = 'http://localhost:5555', dataFile = path.join(__di
         });
         return send(200, expand('requests', updated, store.data.records));
       }
+      const quoteId = /^\/api\/requests\/(\d+)\/quote$/.exec(url.pathname)?.[1];
+      if (quoteId && request.method === 'GET') {
+        const item = records.requests.find(record => record.id === Number(quoteId) && !record.deletedAt);
+        if (!item) throw new HttpError(404, 'Заявка не найдена.');
+        if (user.role === 'client' && item.clientId !== user.clientId) throw new HttpError(403, 'Можно смотреть расчёт только своих заявок.');
+        const { quote } = require('./pricing');
+        return send(200, quote(item, records, Number(url.searchParams.get('discount') ?? 0)));
+      }
       const parts = url.pathname.split('/').filter(Boolean);
       const [prefix, kind, segment, action] = parts;
       if (prefix !== 'api' || !kinds.includes(kind) || parts.length > 4) throw new HttpError(404, 'Адрес API не найден');
@@ -106,6 +133,7 @@ function createApi({ origin = 'http://localhost:5555', dataFile = path.join(__di
           const id = next.nextIds[kind]++;
           const record = { ...input, id, deletedAt: null };
           next.records[kind].push(record);
+          if (kind === 'clients') next.records.cards.push({ id: next.nextIds.cards++, name: `Карта ${record.name}`, clientId: id, number: record.card.number, issuedAt: record.card.issuedAt, points: record.card.points, deletedAt: null });
           return record;
         });
         return send(201, expand(kind, created, store.data.records));
@@ -130,6 +158,11 @@ function createApi({ origin = 'http://localhost:5555', dataFile = path.join(__di
           const index = next.records[kind].findIndex(item => item.id === id);
           const updated = { ...input, id, deletedAt: null };
           next.records[kind][index] = updated;
+          if (kind === 'clients') {
+            const card = next.records.cards.find(item => item.clientId === id);
+            if (card) Object.assign(card, { number: updated.card.number, issuedAt: updated.card.issuedAt, points: updated.card.points });
+            else next.records.cards.push({ id: next.nextIds.cards++, name: `Карта ${updated.name}`, clientId: id, ...updated.card, deletedAt: null });
+          }
           return updated;
         });
         return send(200, expand(kind, updated, store.data.records));
@@ -139,6 +172,13 @@ function createApi({ origin = 'http://localhost:5555', dataFile = path.join(__di
         return send(204);
       }
       if (action === 'restore' && request.method === 'POST') {
+        const parent = { cards: ['clients', 'clientId'], contracts: ['requests', 'requestId'], payments: ['contracts', 'contractId'] }[kind];
+        if (parent && !records[parent[0]].some(item => item.id === record[parent[1]] && !item.deletedAt)) throw new HttpError(409, 'Сначала восстановите связанную запись.');
+        if (kind === 'payments' && record.status === 'paid') {
+          const { paidFor } = require('./pricing');
+          const contract = records.contracts.find(item => item.id === record.contractId);
+          if (!contract || contract.deletedAt || contract.status === 'cancelled' || paidFor(contract.id, records, id) + record.amount > contract.amount) throw new HttpError(409, 'Восстановление платежа превышает остаток или договор недоступен.');
+        }
         const restored = store.change(next => {
           const item = next.records[kind].find(item => item.id === id);
           item.deletedAt = null;
@@ -151,14 +191,19 @@ function createApi({ origin = 'http://localhost:5555', dataFile = path.join(__di
       if (!(error instanceof HttpError)) console.error(error);
       send(error.status ?? 500, { message: error instanceof HttpError ? error.message : 'Ошибка сохранения на сервере.', ...(error.errors ? { errors: error.errors } : {}) });
     }
-  });
+  }
   function deleteRecords(kind, ids, hard) {
     for (const id of ids) {
       if (!store.records(kind).some(item => item.id === id)) throw new HttpError(404, `Запись #${id} не найдена`);
+      if (kind === 'clients' && auth.users().some(user => user.clientId === id)) throw new HttpError(409, 'Клиент связан с учётной записью. Удаление невозможно.');
       const counts = dependentCounts(kind, id, store.data.records);
       if (Object.keys(counts).length) throw new HttpError(409, `Удаление невозможно: связанные записи — ${Object.entries(counts).map(([name, count]) => `${name}: ${count}`).join(', ')}. Сначала измените или удалите эти связи. Учитываются также записи в корзине.`);
     }
     store.change(next => {
+      if (kind === 'clients') {
+        if (hard) next.records.cards = next.records.cards.filter(item => !ids.includes(item.clientId));
+        else for (const card of next.records.cards) if (ids.includes(card.clientId)) card.deletedAt ??= new Date().toISOString();
+      }
       if (hard) next.records[kind] = next.records[kind].filter(item => !ids.includes(item.id));
       else for (const item of next.records[kind]) {
         if (ids.includes(item.id) && !item.deletedAt) item.deletedAt = new Date().toISOString();
@@ -191,8 +236,15 @@ if (require.main === module) {
   const dataFile = argument('--data', process.env.DATA_FILE ?? path.join(__dirname, 'data', 'alibi.json'));
   const ttl = Number(argument('--ttl', '900'));
   const sessionTtl = Number(argument('--session-ttl', '3600'));
-  const server = createApi({ origin, dataFile, ttl, sessionTtl });
-  server.on('error', error => { console.error(`Не удалось запустить сервер: ${error.message}`); process.exitCode = 1; });
-  server.listen(port, host, () => console.log(`Alibi API: http://localhost:${port}/api; разрешённый источник: ${origin}`));
+  async function start() {
+    if (process.env.RENDER && !process.env.DATABASE_URL) throw new Error('Укажите DATABASE_URL в настройках Render.');
+    const persistence = process.env.DATABASE_URL ? await require('./postgres').openPostgres(process.env.DATABASE_URL) : null;
+    const server = createApi({ origin, dataFile, ttl, sessionTtl, persistence });
+    if (persistence) await persistence.flush();
+    server.on('error', error => { console.error(`Не удалось запустить сервер: ${error.message}`); process.exitCode = 1; });
+    server.listen(port, host, () => console.log(`Alibi API: порт ${port}; хранилище ${persistence ? 'PostgreSQL' : 'локальный JSON'}`));
+    for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => server.close(async () => { if (persistence) await persistence.close(); process.exit(0); }));
+  }
+  start().catch(error => { console.error(`Запуск не удался: ${error.code ?? error.message}`); process.exitCode = 1; });
 }
 module.exports = { createApi };

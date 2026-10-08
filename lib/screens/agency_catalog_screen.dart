@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/agency_record.dart';
+import '../models/business_record.dart';
 import '../models/app_user.dart';
 import '../state/auth_notifier.dart';
 import '../models/alibi_request.dart';
@@ -240,6 +241,45 @@ class _AgencyCatalogScreenState extends State<AgencyCatalogScreen> {
       build: (record) => Text(formatDate(record.date)),
     );
     switch (widget.kind) {
+      case EntityKind.cards:
+        return [
+          title,
+          text('number', 'Номер карты'),
+          TableColumnSpec(
+            label: 'Клиент',
+            build: (record) => Text(
+              repository.nameOf(
+                EntityKind.clients,
+                readInt(record.toJson()['clientId']),
+              ),
+            ),
+          ),
+          text('points', 'Баллы'),
+          date,
+        ];
+      case EntityKind.contracts:
+        return [
+          title,
+          text('code', 'Номер договора'),
+          TableColumnSpec(
+            label: 'Состояние',
+            build: (record) =>
+                Text(contractStatuses[record.toJson()['status']] ?? '—'),
+          ),
+          text('amount', 'Стоимость, ₽'),
+          date,
+        ];
+      case EntityKind.payments:
+        return [
+          title,
+          text('amount', 'Сумма, ₽'),
+          TableColumnSpec(
+            label: 'Способ оплаты',
+            build: (record) =>
+                Text(paymentMethods[record.toJson()['method']] ?? '—'),
+          ),
+          date,
+        ];
       case EntityKind.requests:
         return [
           title,

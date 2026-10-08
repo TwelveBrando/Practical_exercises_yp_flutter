@@ -48,6 +48,26 @@ void main() {
         'category': 'Стандартная',
         'price': '800',
       },
+      EntityKind.cards => {
+        'name': 'Новая карта',
+        'clientId': 1,
+        'number': 'CARD-0900',
+        'points': '0',
+      },
+      EntityKind.contracts => {
+        'name': 'Новый договор',
+        'code': 'CON-0900',
+        'requestId': 1,
+        'status': 'draft',
+        'discountPercent': '0',
+      },
+      EntityKind.payments => {
+        'name': 'Новый платёж',
+        'contractId': 1,
+        'amount': '100',
+        'method': 'card',
+        'status': 'paid',
+      },
       EntityKind.scenarios => {
         'name': 'Новый сценарий',
         'description': 'Описание нового сценария',
@@ -56,7 +76,7 @@ void main() {
     },
   };
 
-  test('all five models safely parse absent and null fields', () {
+  test('all eight models safely parse absent and null fields', () {
     for (final kind in EntityKind.values) {
       expect(() => repository.decode(kind, {}), returnsNormally);
       expect(

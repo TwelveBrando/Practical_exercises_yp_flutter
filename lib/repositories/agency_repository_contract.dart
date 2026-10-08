@@ -3,6 +3,7 @@ import '../models/agency_service.dart';
 import '../models/client.dart';
 import '../models/employee.dart';
 import '../models/scenario.dart';
+import '../models/business_record.dart';
 import '../models/json_readers.dart';
 import '../models/agency_record.dart';
 import '../models/page_result.dart';
@@ -25,6 +26,9 @@ abstract class AgencyRepositoryContract {
         EntityKind.employees => Employee.fromJson(json),
         EntityKind.services => AgencyService.fromJson(json),
         EntityKind.scenarios => Scenario.fromJson(json),
+        EntityKind.cards ||
+        EntityKind.contracts ||
+        EntityKind.payments => BusinessRecord(kind, json),
       };
 
   Future<void> initialize();
@@ -46,7 +50,18 @@ abstract class AgencyRepositoryContract {
           'cardPoints': '0',
           'experienceYears': '0',
           'durationMinutes': '30',
+          'issuedAt': today,
+          'paidAt': today,
+          'points': '0',
+          'discountPercent': '0',
+          'method': 'card',
         };
+    if (record == null && kind == EntityKind.contracts) {
+      values['status'] = 'draft';
+    }
+    if (record == null && kind == EntityKind.payments) {
+      values['status'] = 'paid';
+    }
     if (record is Client) {
       values['cardNumber'] = record.card?.number ?? '';
       values['cardIssuedAt'] = formatDate(
@@ -54,7 +69,14 @@ abstract class AgencyRepositoryContract {
       );
       values['cardPoints'] = '${record.card?.points ?? 0}';
     }
-    for (final key in ['eventDate', 'joinedAt', 'hiredAt', 'createdAt']) {
+    for (final key in [
+      'eventDate',
+      'joinedAt',
+      'hiredAt',
+      'createdAt',
+      'issuedAt',
+      'paidAt',
+    ]) {
       if (values[key] != null) values[key] = formatDate(readDate(values[key]));
     }
     return values;

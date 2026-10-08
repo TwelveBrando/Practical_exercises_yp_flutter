@@ -92,7 +92,7 @@ void main() {
     });
   }
 
-  testWidgets('all five edit forms are filled and responsive', (tester) async {
+  testWidgets('all eight edit forms are filled and responsive', (tester) async {
     await open(tester, '/requests/1/edit');
     for (final kind in EntityKind.values) {
       appRouter.go('${kind.path}/1/edit');

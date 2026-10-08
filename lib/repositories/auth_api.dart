@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../core/api_exceptions.dart';
 import '../models/app_user.dart';
+import '../models/pricing_quote.dart';
 
 class AuthSession {
   AuthSession.fromJson(Map<String, dynamic> json)
@@ -71,6 +72,15 @@ class AuthApi {
       path,
       queryParameters: section == 'client' ? {'page': page, 'size': 10} : null,
     )).data;
+  });
+  Future<PricingQuote> estimate(int requestId, int discount) => guard(() async {
+    final response = await dio.get(
+      '/requests/$requestId/quote',
+      queryParameters: {'discount': discount},
+    );
+    return PricingQuote.fromJson(
+      Map<String, dynamic>.from(response.data as Map),
+    );
   });
   Future<void> reschedule(int id, String eventDate) => guard(() async {
     await dio.post(

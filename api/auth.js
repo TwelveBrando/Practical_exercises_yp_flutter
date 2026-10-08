@@ -18,23 +18,25 @@ function equal(a, b) {
   const left = Buffer.from(a, 'hex'), right = Buffer.from(b, 'hex');
   return left.length === right.length && crypto.timingSafeEqual(left, right);
 }
-function openAuth(file, store, { ttl = 900, refreshTtl = 604800, sessionTtl = 3600, now = () => Date.now() } = {}) {
+function openAuth(file, store, { ttl = 900, refreshTtl = 604800, sessionTtl = 3600, now = () => Date.now(), persistence = null } = {}) {
   for (const value of [ttl, refreshTtl, sessionTtl]) if (!Number.isFinite(value) || value <= 0) throw new Error('Сроки сессии должны быть положительными числами');
   function makeUser(id, username, name, role, clientId = null) {
     const salt = crypto.randomBytes(16).toString('hex');
     return { id, username, name, role, clientId, active: true, salt, passwordHash: passwordHash('Alibi123!', salt) };
   }
-  let data = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {
+  const raw = persistence ? persistence.read('auth') : fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : null;
+  let data = raw ?? {
     version: 1, secret: crypto.randomBytes(48).toString('hex'), nextId: 4, sessions: [],
     users: [makeUser(1, 'client', 'Иван Петров', 'client', store.records('clients')[0]?.id ?? null), makeUser(2, 'employee', 'Сотрудник агентства', 'employee'), makeUser(3, 'admin', 'Администратор', 'admin')],
   };
   if (data.version !== 1 || !Array.isArray(data.users) || !Array.isArray(data.sessions)) throw new Error('Неверный формат базы пользователей');
   function save() {
+    if (persistence) { persistence.write('auth', data); return; }
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file + '.tmp', JSON.stringify(data, null, 2), 'utf8');
     fs.renameSync(file + '.tmp', file);
   }
-  if (!fs.existsSync(file)) save();
+  if (!raw) save();
   const userView = user => ({ id: user.id, username: user.username, name: user.name, role: user.role, clientId: user.clientId, active: user.active });
   const seconds = () => Math.floor(now() / 1000);
   function signature(value) { return crypto.createHmac('sha256', data.secret).update(value).digest('hex'); }
@@ -103,8 +105,10 @@ function openAuth(file, store, { ttl = 900, refreshTtl = 604800, sessionTtl = 36
       const id = next.nextIds.clients++;
       const date = new Date(now()).toISOString();
       const record = { id, name, email, city: 'Не указан', joinedAt: date, deletedAt: null, card: { number: `CARD-${String(id).padStart(4, '0')}`, issuedAt: date, points: 0 } };
-      while (next.records.clients.some(item => item.card.number === record.card.number)) record.card.number = `CARD-${String(crypto.randomInt(10000, 99999999))}`;
-      next.records.clients.push(record); return record;
+      while (next.records.cards.some(item => item.number === record.card.number)) record.card.number = `CARD-${String(crypto.randomInt(10000, 99999999))}`;
+      next.records.clients.push(record);
+      next.records.cards.push({ id: next.nextIds.cards++, name: `Карта ${name}`, clientId: id, number: record.card.number, issuedAt: date, points: 0, deletedAt: null });
+      return record;
     });
     const user = { id: data.nextId++, username, name, role: 'client', clientId: client.id, active: true, salt, passwordHash: hash };
     data.users.push(user); save();
@@ -134,6 +138,6 @@ function openAuth(file, store, { ttl = 900, refreshTtl = 604800, sessionTtl = 36
     data.sessions = data.sessions.filter(item => item.userId !== user.id); save();
     return userView(user);
   }
-  return { authenticate, requirePermission, login, register, refresh, logout, updateUser, userView, users: () => data.users.map(userView) };
+  return { reload: () => { data = persistence.read('auth'); }, authenticate, requirePermission, login, register, refresh, logout, updateUser, userView, users: () => data.users.map(userView) };
 }
 module.exports = { openAuth, passwordProblems };

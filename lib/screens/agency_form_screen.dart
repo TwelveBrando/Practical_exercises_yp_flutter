@@ -245,6 +245,13 @@ class _AgencyFormScreenState extends State<AgencyFormScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (widget.kind == EntityKind.contracts)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 16),
+                          child: Text(
+                            'Сумма договора рассчитывается при сохранении по услуге, срочности и сценариям выбранной заявки с учётом скидки. Подробный расчёт можно открыть в карточке заявки.',
+                          ),
+                        ),
                       if (_saveError != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 16),

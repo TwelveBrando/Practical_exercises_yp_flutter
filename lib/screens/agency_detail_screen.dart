@@ -113,7 +113,10 @@ class _AgencyDetailScreenState extends State<AgencyDetailScreen> {
               EntityKind.employees => request.employeeIds.contains(id),
               EntityKind.services => request.serviceId == id,
               EntityKind.scenarios => request.scenarioIds.contains(id),
-              EntityKind.requests => false,
+              EntityKind.requests ||
+              EntityKind.cards ||
+              EntityKind.contracts ||
+              EntityKind.payments => false,
             },
           )
           .toList();
@@ -129,6 +132,40 @@ class _AgencyDetailScreenState extends State<AgencyDetailScreen> {
             .where((service) => service.id == record.toJson()['serviceId'])
             .toList();
       }
+    }
+    if (kind == EntityKind.cards) {
+      linked[EntityKind.clients] = repository
+          .all(EntityKind.clients)
+          .where((item) => item.id == record.toJson()['clientId'])
+          .toList();
+    }
+    if (kind == EntityKind.contracts) {
+      linked[EntityKind.requests] = repository
+          .all(EntityKind.requests)
+          .where((item) => item.id == record.toJson()['requestId'])
+          .toList();
+      linked[EntityKind.payments] = repository
+          .all(EntityKind.payments)
+          .where((item) => item.toJson()['contractId'] == id)
+          .toList();
+    }
+    if (kind == EntityKind.payments) {
+      linked[EntityKind.contracts] = repository
+          .all(EntityKind.contracts)
+          .where((item) => item.id == record.toJson()['contractId'])
+          .toList();
+    }
+    if (kind == EntityKind.clients) {
+      linked[EntityKind.cards] = repository
+          .all(EntityKind.cards)
+          .where((item) => item.toJson()['clientId'] == id)
+          .toList();
+    }
+    if (kind == EntityKind.requests) {
+      linked[EntityKind.contracts] = repository
+          .all(EntityKind.contracts)
+          .where((item) => item.toJson()['requestId'] == id)
+          .toList();
     }
     return AppShell(
       title: 'Карточка: ${kind.singular}',
@@ -148,6 +185,14 @@ class _AgencyDetailScreenState extends State<AgencyDetailScreen> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (kind == EntityKind.requests && !record.isDeleted) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => context.go('/requests/$id/estimate'),
+                        icon: const Icon(Icons.calculate_outlined),
+                        label: const Text('Рассчитать стоимость'),
+                      ),
+                    ],
                     const SizedBox(height: 20),
                     for (final row in rows.entries)
                       Padding(

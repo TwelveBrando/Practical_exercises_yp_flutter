@@ -3,7 +3,7 @@
 class HttpError extends Error {
   constructor(status, message, errors) { super(message); this.status = status; this.errors = errors; }
 }
-const dateKeys = { requests: 'eventDate', clients: 'joinedAt', employees: 'hiredAt', services: 'createdAt', scenarios: 'createdAt' };
+const dateKeys = { requests: 'eventDate', clients: 'joinedAt', employees: 'hiredAt', services: 'createdAt', scenarios: 'createdAt', cards: 'issuedAt', contracts: 'createdAt', payments: 'paidAt' };
 function validate(kind, body, editingId, records) {
   const errors = {};
   const value = {};
@@ -61,6 +61,31 @@ function validate(kind, body, editingId, records) {
       errors.scenarioIds = 'Сценарии должны относиться к выбранной услуге';
     }
     value.createdAt = old?.createdAt ?? new Date().toISOString();
+  } else if (['cards', 'contracts', 'payments'].includes(kind)) {
+    text('name'); date(dateKeys[kind]);
+    if (kind === 'cards') {
+      identifier('number', 'CARD'); unique('number'); reference('clientId', 'clients'); number('points', 0, 100000);
+      if (records.cards.some(item => item.id !== editingId && item.clientId === body.clientId)) errors.clientId = 'У клиента уже есть карта, в том числе в корзине.';
+    } else if (kind === 'contracts') {
+      identifier('code', 'CON'); unique('code'); reference('requestId', 'requests');
+      enumField('status', ['draft', 'signed', 'completed', 'cancelled']); number('discountPercent', 0, 30);
+      if (!errors.requestId && !errors.discountPercent) {
+        const { quote, paidFor } = require('./pricing');
+        value.pricing = quote(records.requests.find(item => item.id === body.requestId), records, body.discountPercent);
+        value.amount = value.pricing.total;
+        if (old && paidFor(old.id, records) > value.amount) throw new HttpError(409, 'Стоимость договора не может быть меньше уже оплаченной суммы.');
+        if (old && body.status === 'cancelled' && paidFor(old.id, records) > 0) throw new HttpError(409, 'Сначала оформите возврат платежей по договору.');
+      }
+    } else {
+      reference('contractId', 'contracts'); number('amount', 1, 10000000);
+      enumField('method', ['cash', 'card', 'transfer']); enumField('status', ['paid', 'refunded']);
+      if (!errors.contractId && !errors.amount && body.status === 'paid') {
+        const { paidFor } = require('./pricing');
+        const contract = records.contracts.find(item => item.id === body.contractId);
+        if (contract.status === 'cancelled') throw new HttpError(409, 'Нельзя оплатить отменённый договор.');
+        if (paidFor(contract.id, records, editingId) + body.amount > contract.amount) throw new HttpError(409, 'Платёж превышает остаток по договору.');
+      }
+    }
   } else {
     text('name', kind === 'clients' || kind === 'employees' ? 2 : 3);
     date(dateKeys[kind]);
@@ -73,6 +98,8 @@ function validate(kind, body, editingId, records) {
       const card = body.card && typeof body.card === 'object' && !Array.isArray(body.card) ? body.card : {};
       body = { ...body, cardNumber: card.number, cardIssuedAt: card.issuedAt, cardPoints: card.points };
       identifier('cardNumber', 'CARD'); unique('cardNumber', item => item.card?.number);
+      if (records.cards.some(item => item.clientId !== editingId && item.number?.toLowerCase() === String(value.cardNumber).toLowerCase())) errors.cardNumber = 'Такой номер карты уже используется';
+      if (old && records.cards.some(item => item.clientId === old.id && item.deletedAt)) throw new HttpError(409, 'Сначала восстановите карту клиента из корзины.');
       date('cardIssuedAt'); number('cardPoints', 0, 100000);
       value.card = { number: value.cardNumber, issuedAt: value.cardIssuedAt, points: value.cardPoints };
       delete value.cardNumber; delete value.cardIssuedAt; delete value.cardPoints;
@@ -98,6 +125,8 @@ function dependentCounts(kind, id, records) {
   const key = keys[kind];
   const requests = key ? records.requests.filter(item => Array.isArray(item[key]) ? item[key].includes(id) : item[key] === id).length : 0;
   const scenarios = kind === 'services' ? records.scenarios.filter(item => item.serviceId === id).length : 0;
-  return { ...(requests ? { 'заявки': requests } : {}), ...(scenarios ? { 'сценарии': scenarios } : {}) };
+  const contracts = kind === 'requests' ? records.contracts.filter(item => item.requestId === id).length : 0;
+  const payments = kind === 'contracts' ? records.payments.filter(item => item.contractId === id).length : 0;
+  return { ...(contracts ? { 'договоры': contracts } : {}), ...(payments ? { 'платежи': payments } : {}), ...(requests ? { 'заявки': requests } : {}), ...(scenarios ? { 'сценарии': scenarios } : {}) };
 }
 module.exports = { HttpError, validate, dependentCounts, dateKeys };

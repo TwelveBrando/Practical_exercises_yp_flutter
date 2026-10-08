@@ -19,6 +19,9 @@ class AppShell extends StatelessWidget {
     '/employees' => Icons.badge_outlined,
     '/services' => Icons.work_outline,
     '/scenarios' => Icons.description_outlined,
+    '/cards' => Icons.credit_card_outlined,
+    '/contracts' => Icons.article_outlined,
+    '/payments' => Icons.payments_outlined,
     _ => Icons.manage_accounts_outlined,
   };
 

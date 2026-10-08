@@ -105,12 +105,18 @@ class ApiAgencyRepository extends AgencyRepositoryContract {
     void remember(EntityKind kind, dynamic value) {
       if (value is Map) {
         final id = readInt(value['id']);
-        if (id > 0) (_names[kind] ??= {})[id] = readString(value['name']);
+        if (id > 0) {
+          (_names[kind] ??= {})[id] = readString(
+            value['name'] ?? value['title'],
+          );
+        }
       }
     }
 
     remember(EntityKind.clients, json['client']);
     remember(EntityKind.services, json['service']);
+    remember(EntityKind.requests, json['request']);
+    remember(EntityKind.contracts, json['contract']);
     for (final pair in [
       (EntityKind.employees, 'employees'),
       (EntityKind.scenarios, 'scenarios'),
@@ -201,6 +207,9 @@ class ApiAgencyRepository extends AgencyRepositoryContract {
         EntityKind.scenarios,
       ],
       EntityKind.scenarios => [EntityKind.services],
+      EntityKind.cards => [EntityKind.clients],
+      EntityKind.contracts => [EntityKind.requests],
+      EntityKind.payments => [EntityKind.contracts],
       _ => <EntityKind>[],
     };
     await Future.wait(required.map(_loadReference));
@@ -234,8 +243,8 @@ class ApiAgencyRepository extends AgencyRepositoryContract {
   }
 
   void _invalidate(EntityKind kind) {
-    _references.remove(kind);
-    _filters.remove(kind);
+    _references.clear();
+    _filters.clear();
     _relations = {};
     _names.clear();
     if (_pageKind == kind) _pageRecords = [];

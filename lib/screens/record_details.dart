@@ -1,5 +1,6 @@
 import '../models/agency_record.dart';
 import '../models/alibi_request.dart';
+import '../models/business_record.dart';
 import '../models/json_readers.dart';
 import '../repositories/agency_repository_contract.dart';
 
@@ -13,6 +14,46 @@ Map<String, String> recordDetails(
       readIds(ids).map((id) => repository.nameOf(target, id)).join(', ');
   final fields = <String, String>{};
   switch (kind) {
+    case EntityKind.cards:
+      fields.addAll({
+        'Название': record.name,
+        'Клиент': repository.nameOf(
+          EntityKind.clients,
+          readInt(json['clientId']),
+        ),
+        'Номер карты': readString(json['number']),
+        'Бонусные баллы': '${json['points']}',
+        'Дата выдачи': formatDate(record.date),
+      });
+    case EntityKind.contracts:
+      final pricing = readMap(json['pricing']);
+      fields.addAll({
+        'Название': record.name,
+        'Номер договора': readString(json['code']),
+        'Заявка': repository.nameOf(
+          EntityKind.requests,
+          readInt(json['requestId']),
+        ),
+        'Состояние': contractStatuses[json['status']] ?? '—',
+        'Базовая цена': '${pricing['base'] ?? 0} ₽',
+        'Срочность': '${pricing['urgency'] ?? 0} ₽',
+        'Подготовка сценариев': '${pricing['preparation'] ?? 0} ₽',
+        'Скидка': '${json['discountPercent']}%',
+        'Итоговая стоимость': '${json['amount']} ₽',
+        'Дата договора': formatDate(record.date),
+      });
+    case EntityKind.payments:
+      fields.addAll({
+        'Назначение': record.name,
+        'Договор': repository.nameOf(
+          EntityKind.contracts,
+          readInt(json['contractId']),
+        ),
+        'Сумма': '${json['amount']} ₽',
+        'Способ оплаты': paymentMethods[json['method']] ?? '—',
+        'Состояние': paymentStatuses[json['status']] ?? '—',
+        'Дата платежа': formatDate(record.date),
+      });
     case EntityKind.requests:
       final request = record as AlibiRequest;
       fields.addAll({

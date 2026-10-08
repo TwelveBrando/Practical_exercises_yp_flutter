@@ -224,6 +224,9 @@ class _AccountScreenState extends State<AccountScreen> {
           'employees': 'Сотрудники',
           'services': 'Услуги',
           'scenarios': 'Сценарии',
+          'cards': 'Карты клиентов',
+          'contracts': 'Договоры',
+          'payments': 'Платежи',
         };
         return ListView(
           children: [

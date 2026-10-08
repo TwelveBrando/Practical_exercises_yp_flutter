@@ -3,6 +3,7 @@ import '../models/alibi_request.dart';
 import '../models/agency_service.dart';
 import '../models/client.dart';
 import '../models/scenario.dart';
+import '../models/business_record.dart';
 import 'validators.dart';
 
 enum FieldInput { text, number, date, select, multiple }
@@ -147,6 +148,63 @@ List<RecordField> recordFields(
   );
 
   switch (kind) {
+    case EntityKind.cards:
+      return [
+        text('name', 'Название карты'),
+        select(
+          'clientId',
+          'Клиент',
+          references(EntityKind.clients, 'clientId'),
+        ),
+        RecordField(
+          key: 'number',
+          label: 'Номер карты (CARD-0001)',
+          validate: (value) =>
+              Validators.identifier(value, 'CARD') ?? unique(value, 'number'),
+        ),
+        number('points', 'Бонусные баллы', 0, 100000),
+        date('issuedAt', 'Дата выдачи'),
+      ];
+    case EntityKind.contracts:
+      return [
+        text('name', 'Название договора'),
+        RecordField(
+          key: 'code',
+          label: 'Номер договора (CON-0001)',
+          validate: (value) =>
+              Validators.identifier(value, 'CON') ?? unique(value, 'code'),
+        ),
+        select(
+          'requestId',
+          'Заявка',
+          references(EntityKind.requests, 'requestId'),
+        ),
+        select('status', 'Состояние договора', [
+          for (final item in contractStatuses.entries)
+            FieldOption(item.key, item.value),
+        ]),
+        number('discountPercent', 'Скидка (% от 0 до 30)', 0, 30),
+        date('createdAt', 'Дата договора'),
+      ];
+    case EntityKind.payments:
+      return [
+        text('name', 'Назначение платежа'),
+        select(
+          'contractId',
+          'Договор',
+          references(EntityKind.contracts, 'contractId'),
+        ),
+        number('amount', 'Сумма (₽)', 1, 10000000),
+        select('method', 'Способ оплаты', [
+          for (final item in paymentMethods.entries)
+            FieldOption(item.key, item.value),
+        ]),
+        select('status', 'Состояние платежа', [
+          for (final item in paymentStatuses.entries)
+            FieldOption(item.key, item.value),
+        ]),
+        date('paidAt', 'Дата платежа'),
+      ];
     case EntityKind.requests:
       final scenarios = references(
         EntityKind.scenarios,
@@ -287,6 +345,21 @@ List<FieldOption> categoryOptions(
   Map<EntityKind, List<AgencyRecord>> catalogs,
 ) {
   switch (kind) {
+    case EntityKind.cards:
+      return [
+        for (final record in catalogs[EntityKind.clients]!)
+          FieldOption(record.id.toString(), record.name),
+      ];
+    case EntityKind.contracts:
+      return [
+        for (final item in contractStatuses.entries)
+          FieldOption(item.key, item.value),
+      ];
+    case EntityKind.payments:
+      return [
+        for (final item in paymentMethods.entries)
+          FieldOption(item.key, item.value),
+      ];
     case EntityKind.requests:
       return [
         for (final type in RequestType.values)
